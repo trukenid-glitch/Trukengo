@@ -3,6 +3,13 @@ import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Menu from "./pages/Menu";
 import DetailMenu from "./pages/DetailMenu"
+import Login from "./pages/Login";
+import ProtectedRoute from "./components/ProtectedRoute";
+import UpdateBaseLocation from "./pages/super_admin/UpdateBaseLocation";
+
+
+// admin
+import AdminDashboard from "./pages/super_admin/AdminDashboard";
 
 export default function App() {
   return (
@@ -10,6 +17,26 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/menu" element={<Menu />} />
       <Route path="/menu/:id" element={<DetailMenu />} />
+      <Route path="/login" element={<Login />} />
+
+      {/* Admin */}
+      <Route 
+        path="/super-admin/dashboard" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/super-admin/set-location" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <UpdateBaseLocation />
+          </ProtectedRoute>
+        } 
+      />
+    
       <Route
         path="*"
         element={

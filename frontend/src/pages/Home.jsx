@@ -7,6 +7,8 @@ import AddressForm from "../components/AddressForm";
 import PriceCalculator from "../components/PriceCalculator";
 import { ADMIN_LOCATION } from "../utils/constants";
 import { useNavigate } from "react-router-dom";
+import { getBaseLocationOpen } from "../api/adminService";
+
 import "../App.css";
 
 const libraries = ["places"];
@@ -24,6 +26,7 @@ export default function Home() {
   const [directionsResponse, setDirectionsResponse] = useState(null);
   const [distances, setDistances] = useState({ pickup: 0, delivery: 0 });
   const [durations, setDurations] = useState({ pickup: 0, delivery: 0 });
+  const [adminCoords, setAdminCoords] = useState(ADMIN_LOCATION);
 
   const [showQRIS, setShowQRIS] = useState(false);
   const priceRef = useRef(null);
@@ -33,6 +36,23 @@ export default function Home() {
   const textWA = encodeURIComponent(
     "Halo Truken Jastip! Saya mau pesan jastip dong, tadi sudah cek ongkir di website.",
   );
+
+  useEffect(() => {
+    const loadAdminPos = async () => {
+      try {
+        const result = await getBaseLocationOpen(); // Panggil API yang sama
+        if (result.data) {
+          setAdminCoords({
+            lat: parseFloat(result.data.latitude),
+            lng: parseFloat(result.data.longitude)
+          });
+        }
+      } catch (err) {
+        console.log("Pakai lokasi default karena:", err);
+      }
+    };
+    loadAdminPos();
+  }, []);
 
   const handleMapClick = useCallback(
     async (e) => {
@@ -73,7 +93,7 @@ export default function Home() {
     try {
       // 1. HITUNG JARAK LANGSUNG (Patokan Admin -> Customer)
       const directResults = await directionsService.route({
-        origin: ADMIN_LOCATION,
+        origin: adminCoords,
         destination: customerLocation.coords,
         travelMode: google.maps.TravelMode.DRIVING,
         avoidTolls: true,
@@ -82,7 +102,7 @@ export default function Home() {
 
       // 2. HITUNG RUTE ASLI (Admin -> [Toko] -> Customer)
       const routeOptions = {
-        origin: ADMIN_LOCATION,
+        origin: adminCoords,
         destination: customerLocation.coords,
         travelMode: google.maps.TravelMode.DRIVING,
         avoidTolls: true,
@@ -227,7 +247,7 @@ export default function Home() {
       {/* BAGIAN MAP */}
       <div className="h-[40dvh] md:h-full md:w-3/5 lg:w-2/3 relative shrink-0">
         <MapSection
-          adminLocation={ADMIN_LOCATION}
+          adminLocation={adminCoords}
           storeLocation={storeLocation?.coords}
           customerLocation={customerLocation?.coords}
           directionsResponse={directionsResponse}
@@ -246,7 +266,7 @@ export default function Home() {
           <div className="flex justify-between items-start">
             <div>
               <h1 className="text-md  text-amber-700  tracking-tight">
-                Truken Jastip
+                TRUKENGO
               </h1>
               <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest ">
                 Kendal & Sekitarnya

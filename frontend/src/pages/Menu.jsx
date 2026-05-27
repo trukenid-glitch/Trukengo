@@ -35,7 +35,7 @@ export default function Menu() {
                 </div>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-1">
                   <span className="w-4 h-[1px] bg-slate-300"></span>
-                  Truken Jastip Food
+                  TUKENGO
                 </p>
               </div>
             </div>
