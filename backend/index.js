@@ -5,8 +5,11 @@ require("dotenv").config();
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require('./routes/adminRoutes');
 
+const axios = require('axios');
+
 const app = express();
 const port = process.env.PORT || 5000;
+const URL_BACKEND = "https://trukengo.onrender.com/api/ping";
 
 // MIDDLEWARE
 app.use(cors({
@@ -19,6 +22,16 @@ app.use(express.json()); // Biar bisa baca JSON dari frontend
 
 app.use("/api/auth", authRoutes);
 app.use('/api/admin', adminRoutes);
+
+app.get('/api/ping', (req, res) => {
+  res.send("Hadir, ndes!");
+});
+
+setInterval(() => {
+  axios.get(URL_BACKEND)
+    .then(() => console.log("✅ Render disenggol: Server melek terus!"))
+    .catch((err) => console.log("⚠️ Gagal nyenggol, mungkin server lagi restart."));
+}, 13 * 60 * 1000);
 
 // ROUTES DASAR
 app.get("/", (req, res) => {
