@@ -10,6 +10,7 @@ import UpdateBaseLocation from "./pages/super_admin/UpdateBaseLocation";
 
 // admin
 import AdminDashboard from "./pages/super_admin/AdminDashboard";
+import AddStore from "./pages/super_admin/AddStore";
 
 export default function App() {
   return (
@@ -33,6 +34,15 @@ export default function App() {
         element={
           <ProtectedRoute allowedRoles={['admin']}>
             <UpdateBaseLocation />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/super-admin/tambah-toko" 
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AddStore />
           </ProtectedRoute>
         } 
       />

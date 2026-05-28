@@ -4,8 +4,7 @@ const pool = require('../db');
 exports.userLogin = async (req, res) => {
     const { username, password } = req.body;
 
-    console.log("Input dari Frontend:", { username, password });
-    
+
     try {
         // 1. Cek apakah ada user yang username DAN password-nya cocok dalam satu baris
         // Kita ambil semua kolomnya (*) biar dapet role-nya juga
@@ -13,8 +12,6 @@ exports.userLogin = async (req, res) => {
             "SELECT * FROM users WHERE username = $1 AND password = $2", 
             [username, password]
         );
-
-        console.log("Hasil Query Database:", result.rows);
 
         // 2. Kalau tidak ada baris yang cocok (rows.length === 0)
         if (result.rows.length === 0) {

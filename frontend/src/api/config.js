@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // URL API dari .env (Vercel) atau localhost (Development)
-export const API_URL = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
+export const API_URL = `${import.meta.env.VITE_API_URL || 'http://10.212.199.12:5000'}/api`;
 
 // Buat instance axios agar tidak perlu ketik URL berulang-ulang
 const api = axios.create({

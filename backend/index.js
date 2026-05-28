@@ -4,6 +4,7 @@ const pool = require("./db");
 require("dotenv").config();
 const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require('./routes/adminRoutes');
+const customerRoutes = require('./routes/customerRoutes')
 
 const axios = require('axios');
 
@@ -13,7 +14,7 @@ const URL_BACKEND = "https://trukengo.onrender.com/api/ping";
 
 // MIDDLEWARE
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Ijin buat Vercel
+  origin: process.env.FRONTEND_URL || process.env.DOMAIN_URL || 'http://localhost:5173', // Ijin buat Vercel
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
@@ -22,6 +23,7 @@ app.use(express.json()); // Biar bisa baca JSON dari frontend
 
 app.use("/api/auth", authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/customer', customerRoutes);
 
 app.get('/api/ping', (req, res) => {
   res.send("Hadir, ndes!");

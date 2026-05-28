@@ -1,0 +1,2 @@
+hapus console
+hapus foto di public

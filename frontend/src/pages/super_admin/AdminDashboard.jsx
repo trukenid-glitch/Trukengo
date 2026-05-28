@@ -86,7 +86,7 @@ export default function AdminDashboard() {
                 <p className="text-xs text-gray-500 mb-4">Tambah mitra toko atau katalog makanan baru.</p>
                 <div className="space-y-2">
                 <button 
-                    onClick={() => navigate('/admin/tambah-toko')}
+                    onClick={() => navigate('/super-admin/tambah-toko')}
                     className="w-full bg-blue-600 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 mt-4"
                 >
                     Tambah Toko / Menu
