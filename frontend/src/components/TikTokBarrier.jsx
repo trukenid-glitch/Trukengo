@@ -8,28 +8,65 @@ import {
 } from "lucide-react";
 
 export default function TikTokBarrier() {
-  const [isTikTok, setIsTikTok] = useState(false);
+  const [isInApp, setIsInApp] = useState(false);
+  const [detectedApp, setDetectedApp] = useState("");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Deteksi apakah user-agent mengandung kata TikTok
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    if (ua.includes("TikTok") || ua.includes("FBAN") || ua.includes("FBAV")) {
-      setIsTikTok(true);
+    // Deteksi apakah user-agent mengandung kata TikTok / Instagram / Facebook (in-app browsers)
+    const ua = (navigator.userAgent || navigator.vendor || window.opera || "").toLowerCase();
+    if (ua.includes("tiktok")) {
+      setIsInApp(true);
+      setDetectedApp("TikTok");
+    } else if (ua.includes("instagram")) {
+      setIsInApp(true);
+      setDetectedApp("Instagram");
+    } else if (ua.includes("fban") || ua.includes("fbav") || ua.includes("facebook")) {
+      setIsInApp(true);
+      setDetectedApp("Facebook");
     }
   }, []);
 
   const handleOpenBrowser = () => {
-    const currentUrl = window.location.href.replace(/^https?:\/\//, "");
-    // Intent khusus Android untuk paksa buka Chrome
-    const intentUrl = `intent://${currentUrl}#Intent;scheme=https;package=com.android.chrome;end`;
+    const href = window.location.href;
+    const ua = (navigator.userAgent || "").toLowerCase();
+    const isAndroid = /android/.test(ua);
+    const isIOS = /iphone|ipad|ipod/.test(ua);
 
-    window.location.href = intentUrl;
+    try {
+      if (isAndroid) {
+        // Intent untuk buka Chrome di Android
+        const withoutProtocol = href.replace(/^https?:\/\//, "");
+        const intentUrl = `intent://${withoutProtocol}#Intent;scheme=https;package=com.android.chrome;end`;
+        window.location.href = intentUrl;
+        // Jika intent gagal, fallback ke copy setelah short delay
+        setTimeout(() => handleCopyLink(), 800);
+        return;
+      }
 
-    // Fallback kalau intent tidak jalan (misal di iPhone)
-    setTimeout(() => {
+      if (isIOS) {
+        // Coba buka di Chrome iOS via custom scheme
+        const chromeScheme = href.replace(/^https?:\/\//, "googlechromes://");
+        window.location.href = chromeScheme;
+        // fallback: coba open new tab (may be blocked) then copy
+        setTimeout(() => {
+          try {
+            window.open(href, "_blank");
+          } catch (e) {}
+          handleCopyLink();
+        }, 800);
+        return;
+      }
+
+      // Default: coba buka di tab baru (desktop or allowed browsers)
+      const opened = window.open(href, "_blank");
+      if (!opened) {
+        // popup blocked or in-app prevented: fallback to copy
+        handleCopyLink();
+      }
+    } catch (err) {
       handleCopyLink();
-    }, 500);
+    }
   };
 
   const handleCopyLink = () => {
@@ -38,28 +75,25 @@ export default function TikTokBarrier() {
     setTimeout(() => setCopied(false), 3000);
   };
 
-  if (!isTikTok) return null;
+  if (!isInApp) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-slate-900 flex items-center justify-center p-6 backdrop-blur-lg">
+    <div className="fixed inset-0 z-[9999] bg-white flex items-center justify-center p-6 backdrop-blur-lg">
       <div className="w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
         {/* Header Alert */}
         <div className="bg-amber-500 p-8 flex flex-col items-center text-white text-center">
-          <div className="bg-white/20 p-3 rounded-full mb-4 animate-bounce">
+          <div className="bg-white/20 p-3 rounded-full mb-4">
             <AlertTriangle size={32} strokeWidth={3} />
           </div>
           <h2 className="text-xl font-black leading-tight uppercase tracking-tight">
-            Pindah ke Chrome <br /> Biar Lancar, Ndes!
+            Pindah ke Browser <br /> Agar Pesanan Lancar!
           </h2>
+          <p className="text-[11px] opacity-90 mt-1">Terdeteksi: {detectedApp}</p>
         </div>
 
         {/* Content */}
         <div className="p-8 space-y-6">
-          <p className="text-gray-600 text-center text-sm font-medium leading-relaxed">
-            Browser TikTok membatasi fitur{" "}
-            <span className="font-bold text-slate-800">GPS & WhatsApp</span>.
-            Yuk pindah ke browser asli biar bisa pesan Jastip!
-          </p>
+
 
           <div className="space-y-3">
             {/* Tombol Utama: Buka Otomatis */}
@@ -68,7 +102,7 @@ export default function TikTokBarrier() {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-200 active:scale-95 transition-all"
             >
               <Monitor size={20} />
-              Buka Otomatis (Android)
+              Buka di Browser (Otomatis)
             </button>
 
             {/* Tombol Cadangan: Salin Link */}
@@ -88,13 +122,14 @@ export default function TikTokBarrier() {
 
           <div className="pt-4 border-t border-dashed border-gray-200">
             <div className="flex items-start gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
-              <div className="bg-gray-100 p-1 rounded-md text-gray-500">
-                INFO
+              <div className="bg-gray-100 p-1 rounded-md text-gray-500">INFO</div>
+              <div>
+                <p>Jika tombol otomatis tidak bekerja:</p>
+                <ul className="list-disc ml-4 text-[12px] text-gray-500">
+                  <li>Tekan "Salin Link Manual" lalu buka Chrome/Safari.</li>
+                  <li>Atau tekan menu (⋮ / …) di pojok kanan atas dan pilih "Buka di browser".</li>
+                </ul>
               </div>
-              <p>
-                Setelah salin link, buka Google Chrome lalu tempel di kolom
-                alamat ya!
-              </p>
             </div>
           </div>
         </div>
