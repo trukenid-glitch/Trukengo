@@ -80,9 +80,43 @@ export default function Menu() {
 
         {/* KONTEN MENU */}
         {loading ? (
-          <div className="p-10 text-center font-bold text-slate-400 animate-pulse">
-            Lagi nyari makanan enak buat kamu...
+           <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[999]">
+        {/* Container Ikon */}
+        <div className="relative flex items-center justify-center">
+          {/* Lingkaran Luar yang Muter */}
+          <div className="absolute w-20 h-20 border-4 border-amber-100 border-t-amber-800 rounded-full animate-spin"></div>
+
+          {/* Ikon Truk di Tengah */}
+          <div className="relative bg-amber-800 p-4 rounded-2xl shadow-lg animate-bounce">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              className="w-8 h-8"
+            >
+              <path d="M10 17h4V5H2v12h3m5 0h20v-5h-3m-10 5a2 2 0 104 0 2 2 0 10-4 0zm10 0a2 2 0 104 0 2 2 0 10-4 0zM13 17V9h4l3 3v5" />
+            </svg>
           </div>
+        </div>
+
+        {/* Teks Loading */}
+        <div className="mt-8 text-center">
+          <h2 className="text-xl font-black text-slate-800 tracking-tight">
+            TRUKEN
+          </h2>
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-xs font-bold text-amber-800 uppercase tracking-[0.2em]">
+              Menyiapkan Makanan
+            </span>
+            <span className="flex gap-0.5">
+              <span className="w-1 h-1 bg-amber-800 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="w-1 h-1 bg-amber-800 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="w-1 h-1 bg-amber-800 rounded-full animate-bounce"></span>
+            </span>
+          </div>
+        </div>
+      </div>
         ) : (
           <div className="px-4 max-w-md mx-auto space-y-4 mt-4">
             {stores.length > 0 ? (

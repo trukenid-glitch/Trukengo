@@ -87,8 +87,42 @@ export default function DetailMenu() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500 font-bold">
-        Lagi ambil detail menu... tunggu sebentar ya.
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-[999]">
+        {/* Container Ikon */}
+        <div className="relative flex items-center justify-center">
+          {/* Lingkaran Luar yang Muter */}
+          <div className="absolute w-20 h-20 border-4 border-amber-100 border-t-amber-800 rounded-full animate-spin"></div>
+
+          {/* Ikon Truk di Tengah */}
+          <div className="relative bg-amber-800 p-4 rounded-2xl shadow-lg animate-bounce">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              className="w-8 h-8"
+            >
+              <path d="M10 17h4V5H2v12h3m5 0h20v-5h-3m-10 5a2 2 0 104 0 2 2 0 10-4 0zm10 0a2 2 0 104 0 2 2 0 10-4 0zM13 17V9h4l3 3v5" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Teks Loading */}
+        <div className="mt-8 text-center">
+          <h2 className="text-xl font-black text-slate-800 tracking-tight">
+            TRUKEN
+          </h2>
+          <div className="flex items-center gap-1 mt-1">
+            <span className="text-xs font-bold text-amber-800 uppercase tracking-[0.2em]">
+              Menyiapkan Makanan
+            </span>
+            <span className="flex gap-0.5">
+              <span className="w-1 h-1 bg-amber-800 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+              <span className="w-1 h-1 bg-amber-800 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+              <span className="w-1 h-1 bg-amber-800 rounded-full animate-bounce"></span>
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -200,7 +234,7 @@ export default function DetailMenu() {
                     produk.menu_photos?.length &&
                     setSelectedImg(produk.menu_photos)
                   }
-                  className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-blue-500/50 shadow-lg active:scale-90 transition-all relative"
+                  className="h-14 w-14 rounded-2xl overflow-hidden border-2 border-gray-500/50 shadow-lg active:scale-90 transition-all relative"
                 >
                   <img
                     src={
@@ -220,7 +254,7 @@ export default function DetailMenu() {
                 </button>
 
                 {/* Label Penjelas di Atas (Tooltip-ish) */}
-                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-blue-600 text-[8px] font-bold px-2 py-0.5 rounded-md text-white whitespace-nowrap animate-bounce shadow-lg">
+                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-amber-800 text-[8px] font-bold px-2 py-0.5 rounded-md text-white whitespace-nowrap animate-bounce shadow-lg">
                   Klik Daftar Menu
                 </div>
               </div>
@@ -229,7 +263,7 @@ export default function DetailMenu() {
               {/* UPDATE TOMBOL UTAMA DI ACTION BAR */}
               <button
                 onClick={() => setShowOrderModal(true)} // Buka modal dulu
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+                className="flex-1 bg-amber-800 hover:bg-amber-900 text-white py-4 rounded-2xl font-black text-[11px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
               >
                 <ShoppingCart size={16} strokeWidth={3} />
                 PESAN JASTIP SEKARANG
@@ -397,7 +431,7 @@ export default function DetailMenu() {
                 ${
                   !extraMenu || !userLocation
                     ? "bg-gray-300 cursor-not-allowed opacity-70" // Warna abu-abu kalau belum lengkap
-                    : "bg-green-500 hover:bg-green-600 text-white shadow-xl shadow-green-200"
+                    : "bg-blue-600 hover:bg-blue-800 text-white shadow-xl shadow-blue-200"
                 }`}
               >
                 <ShoppingCart size={20} />
