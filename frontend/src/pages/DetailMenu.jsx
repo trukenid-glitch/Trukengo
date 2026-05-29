@@ -9,6 +9,7 @@ import {
   X,
   ZoomIn,
   Navigation,
+  DollarSign
 } from "lucide-react";
 import { getStoreDetail } from "../api/customerService";
 
@@ -139,33 +140,53 @@ export default function DetailMenu() {
 
         {/* Konten Detail */}
         <div className="p-6 mt-5 bg-white rounded-t-[32px] relative z-10 ">
-          <div className="flex justify-between items-start mb-2 gap-4">
-            {/* Tambahkan leading-none atau leading-tight */}
-            <h1 className="text-lg font-black text-slate-800 flex-1 leading-tight capitalize tracking-tight">
+          <div className="flex justify-between items-start mb-4 gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl font-black text-slate-900 leading-none capitalize tracking-tighter mb-1">
               {produk.store_name}
             </h1>
+          </div>
+        </div>
 
-            {/* Harganya juga dikunci biar sejajar sama baris pertama teks */}
-            <span className="text-lg font-black text-blue-600 leading-tight shrink-0">
-              Rp {parseInt(produk.price).toLocaleString()}
-            </span>
+          <div className="grid grid-cols-1 gap-3 mb-8">
+            {/* Baris Lokasi */}
+            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100 transition-hover hover:bg-white hover:shadow-md">
+              <div className="bg-white p-2 rounded-xl shadow-sm text-gray-800">
+                <MapPin size={18} />
+              </div>
+              <span className="text-sm font-semibold text-slate-700">{produk.address}</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* Baris Jam */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="bg-white p-2 rounded-xl shadow-sm text-gray-800">
+                  <Clock size={18} />
+                </div>
+                <span className="text-xs font-bold text-slate-700">{produk.operating_hours}</span>
+              </div>
+
+              {/* Baris Harga */}
+              <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="bg-white p-2 rounded-xl shadow-sm text-gray-800">
+                  <DollarSign size={18} />
+                </div>
+                <div>
+                  <p className="text-[8px] font-black text-slate-800 uppercase leading-none mb-1">Mulai Dari</p>
+                  <p className="text-xs font-black text-slate-800">Rp {parseInt(produk.price).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2 mb-6">
-            <div className="flex items-center gap-2 text-gray-500 text-sm font-medium">
-              <MapPin size={16} className="text-red-500" /> {produk.address}
-            </div>
-            <div className="flex items-center gap-2 text-amber-600 text-[10px] font-black uppercase tracking-widest">
-              <Clock size={14} /> {produk.operating_hours}
-            </div>
-          </div>
-
-          <div className="border-t border-gray-100 pt-6">
-            <h2 className="text-sm font-black text-slate-800 uppercase mb-2 tracking-widest">
-              Tentang Makanan Ini
+          <div className="relative border-t border-dashed border-slate-200 pt-6">
+            
+            <h2 className="text-xs font-black text-slate-400 capitalize mb-3 tracking-[0.2em]">
+              TENTANG MAKANAN INI
             </h2>
-            <p className="text-gray-600 leading-relaxed text-sm">
-              {produk.description}
+            
+            <p className="text-slate-600 leading-relaxed text-sm font-medium italic">
+              "{produk.description}"
             </p>
           </div>
 

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, MapPin, Search, Utensils } from "lucide-react";
-import { DUMMY_MENU } from "../utils/dataDummy";
 import { getAllStores } from "../api/customerService";
 import { getImageUrl } from "../helper/wselver";
 
@@ -53,7 +52,7 @@ export default function Menu() {
               <div className="flex flex-col">
                 <div className="flex items-center gap-1">
                   <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none">
-                    KATALOG <span className="text-amber-600">MENU</span>
+                    KATALOG <span className="text-amber-900">MENU</span>
                   </h1>
                 </div>
                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-1">
@@ -93,7 +92,7 @@ export default function Menu() {
                   className="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 group"
                 >
                   {/* Foto Produk Pertama */}
-                  <div className="relative h-48 w-full overflow-hidden bg-gray-100">
+                  <div className="relative h-60 w-full overflow-hidden bg-gray-100">
                     <img
                       src={
                         item.product_photos?.[0] ||
@@ -102,42 +101,49 @@ export default function Menu() {
                       alt={item.store_name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />
-                    <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full shadow-sm">
-                      <span className="text-[10px] font-black text-amber-600 uppercase tracking-wider">
-                        {item.category}
-                      </span>
+                    <div className="absolute top-3 right-3 bg-black/20 backdrop-blur-md border border-white/30 px-3 py-1.5 rounded-xl shadow-lg">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-white uppercase tracking-[0.15em] drop-shadow-sm">
+                          {item.category}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="p-4">
-                    <div className="flex justify-between items-start mb-1">
+                    <div className="flex justify-between items-start mb-2">
                       <h3 className="text-lg font-black text-slate-800 leading-tight">
                         {item.store_name}
                       </h3>
-                      <span className="text-xs font-bold text-blue-600">
-                        Rp {parseInt(item.price).toLocaleString()}
-                      </span>
+                      
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-gray-500 mb-4">
-                      <MapPin size={12} className="text-red-500 shrink-0" />
-                      <span className="text-[11px] font-medium truncate">
+                    <div className="flex items-center gap-1.5 text-gray-700 mb-2">
+                      <span className="text-[12px] font-medium truncate">
                         {item.address}
                       </span>
                     </div>
 
+                    <div className="flex items-center gap-1.5 text-gray-700 mb-2">
+                      <span className="text-[12px] font-medium truncate">
+                         Rp {parseInt(item.price).toLocaleString()}
+                      </span>
+                    </div>
+  
+                    <div className="w-full flex justify-end">
                     <button
                       onClick={() => navigate(`/menu/${item.id}`)}
-                      className="w-full py-3 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-200 active:scale-95 transition-all"
+                      className="w-1/2 py-3 bg-amber-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-slate-200 active:scale-95 transition-all"
                     >
-                      LIHAT DETAIL & PESAN
+                      PESAN
                     </button>
+                    </div>
                   </div>
                 </div>
               ))
             ) : (
               <div className="text-center py-20 text-gray-400">
-                Belum ada toko yang buka nih, ndes.
+                Belum ada toko yang buka nih.
               </div>
             )}
           </div>
