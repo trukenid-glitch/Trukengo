@@ -152,13 +152,34 @@ export default function AddStore() {
   };
 
   // Handler Upload Foto Menu (Tanpa Limit)
-  const handleMenuUpload = (e) => {
+  // Handler Upload Foto Menu (Tanpa Limit + Kompresi WebP)
+  const handleMenuUpload = async (e) => {
     const files = Array.from(e.target.files);
-    const newFiles = files.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-    setMenuFiles([...menuFiles, ...newFiles]);
+    
+    if (files.length === 0) return;
+
+    setLoading(true); // Nyalakan loading pas proses kompresi
+
+    try {
+      // Proses kompresi semua file menu secara paralel
+      const compressedFilesPromises = files.map(async (file) => {
+        const compressed = await compressImage(file);
+        return {
+          file: compressed, // File asli sudah jadi .webp
+          preview: URL.createObjectURL(compressed), // Preview pakai hasil kompresi
+        };
+      });
+
+      const newFiles = await Promise.all(compressedFilesPromises);
+
+      // Gabungkan dengan file menu yang sudah ada sebelumnya
+      setMenuFiles((prev) => [...prev, ...newFiles]);
+    } catch (err) {
+      console.error("Gagal kompres foto menu:", err);
+      alert("Aduh ndes, gagal kompres foto daftar menu!");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Fungsi Hapus Preview (Penting biar memori gak bengkak)
