@@ -15,14 +15,23 @@ export default function TikTokBarrier() {
 
   useEffect(() => {
     // Deteksi apakah user-agent mengandung kata TikTok / Instagram / Facebook (in-app browsers)
-    const ua = (navigator.userAgent || navigator.vendor || window.opera || "").toLowerCase();
+    const ua = (
+      navigator.userAgent ||
+      navigator.vendor ||
+      window.opera ||
+      ""
+    ).toLowerCase();
     if (ua.includes("tiktok")) {
       setIsInApp(true);
       setDetectedApp("TikTok");
     } else if (ua.includes("instagram")) {
       setIsInApp(true);
       setDetectedApp("Instagram");
-    } else if (ua.includes("fban") || ua.includes("fbav") || ua.includes("facebook")) {
+    } else if (
+      ua.includes("fban") ||
+      ua.includes("fbav") ||
+      ua.includes("facebook")
+    ) {
       setIsInApp(true);
       setDetectedApp("Facebook");
     }
@@ -71,16 +80,47 @@ export default function TikTokBarrier() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 3000);
+    const href = window.location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard
+        .writeText(href)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 3000);
+        })
+        .catch(() => {
+          // ignore; user can copy manually
+        });
+    } else {
+      // fallback: create temporary textarea
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = href;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 3000);
+      } catch (e) {}
+    }
   };
 
   if (!isInApp) return null;
 
   return (
     <div className="fixed inset-0 z-[9999] bg-white flex items-center justify-center p-6 backdrop-blur-lg">
-      <div className="w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+      <div className="relative w-full max-w-sm bg-white rounded-[32px] overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-300">
+        {isTikTok && (
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <div className="animate-bounce bg-amber-500 text-white p-2 rounded-full shadow-lg">
+              <ExternalLink size={16} />
+            </div>
+            <div className="bg-white/90 text-xs text-gray-700 px-3 py-2 rounded-xl shadow-sm font-bold">
+              Pilih "Open in Browser"
+            </div>
+          </div>
+        )}
         {/* Header Alert */}
         <div className="bg-amber-500 p-8 flex flex-col items-center text-white text-center">
           <div className="bg-white/20 p-3 rounded-full mb-4">
@@ -89,13 +129,13 @@ export default function TikTokBarrier() {
           <h2 className="text-xl font-black leading-tight uppercase tracking-tight">
             Pindah ke Browser <br /> Agar Pesanan Lancar!
           </h2>
-          <p className="text-[11px] opacity-90 mt-1">Terdeteksi: {detectedApp}</p>
+          <p className="text-[11px] opacity-90 mt-1">
+            Terdeteksi: {detectedApp}
+          </p>
         </div>
 
         {/* Content */}
         <div className="p-8 space-y-6">
-
-
           <div className="space-y-3">
             {/* Tombol Utama: Buka Otomatis */}
             <button
@@ -123,22 +163,38 @@ export default function TikTokBarrier() {
 
           <div className="pt-4 border-t border-dashed border-gray-200">
             <div className="flex items-start gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
-              <div className="bg-gray-100 p-1 rounded-md text-gray-500">INFO</div>
+              <div className="bg-gray-100 p-1 rounded-md text-gray-500">
+                INFO
+              </div>
               <div>
                 {isTikTok ? (
                   <>
-                    <p>TikTok sering menahan halaman di browser internal meski link eksternal sudah dipilih.</p>
+                    <p>
+                      TikTok sering menahan halaman di browser internal meski
+                      link eksternal sudah dipilih.
+                    </p>
                     <ul className="list-disc ml-4 text-[12px] text-gray-500">
-                      <li>Jika tidak langsung keluar, pilih menu TikTok lalu "Open in Browser".</li>
-                      <li>Atau tekan "Salin Link Manual" dan buka link di Chrome/Safari.</li>
+                      <li>
+                        Jika tidak langsung keluar, pilih menu TikTok lalu "Open
+                        in Browser".
+                      </li>
+                      <li>
+                        Atau tekan "Salin Link Manual" dan buka link di
+                        Chrome/Safari.
+                      </li>
                     </ul>
                   </>
                 ) : (
                   <>
                     <p>Jika tombol otomatis tidak bekerja:</p>
                     <ul className="list-disc ml-4 text-[12px] text-gray-500">
-                      <li>Tekan "Salin Link Manual" lalu buka Chrome/Safari.</li>
-                      <li>Atau tekan menu (⋮ / …) di pojok kanan atas dan pilih "Buka di browser".</li>
+                      <li>
+                        Tekan "Salin Link Manual" lalu buka Chrome/Safari.
+                      </li>
+                      <li>
+                        Atau tekan menu (⋮ / …) di pojok kanan atas dan pilih
+                        "Buka di browser".
+                      </li>
                     </ul>
                   </>
                 )}

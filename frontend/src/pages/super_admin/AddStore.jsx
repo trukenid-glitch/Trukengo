@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import MapSection from "../../components/MapSection";
 import { addStore } from "../../api/adminService";
+import { compressImage } from "../../utils/compressor";
 
 const libraries = ["places"];
 
@@ -115,20 +116,39 @@ export default function AddStore() {
   }
 };
 
-  const handleProductUpload = (e) => {
-    const files = Array.from(e.target.files);
+  const handleProductUpload = async (e) => {
+  const files = Array.from(e.target.files);
 
-    if (productFiles.length + files.length > 5) {
-      alert("Waduh ndes, foto produk maksimal cuma 5 ya!");
-      return;
-    }
+  // 1. Validasi jumlah file dulu
+  if (productFiles.length + files.length > 5) {
+    alert("Waduh ndes, foto produk maksimal cuma 5 ya!");
+    return;
+  }
 
-    const newFiles = files.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file), // Buat URL sementara buat preview
-    }));
+  setLoading(true); // Pasang loading biar user nggak bingung pas nunggu kompresi
 
+  try {
+    // 2. Proses kompresi semua file secara paralel
+    const compressedFilesPromises = files.map(async (file) => {
+      // Panggil fungsi helper compressImage yang tadi kita buat
+      const compressed = await compressImage(file); 
+      
+      return {
+        file: compressed, // Ini sudah jadi file .webp
+        preview: URL.createObjectURL(compressed), // Preview juga pakai yang sudah dikompres
+      };
+    });
+
+    const newFiles = await Promise.all(compressedFilesPromises);
+
+    // 3. Masukkan ke dalam state
     setProductFiles([...productFiles, ...newFiles]);
+  } catch (err) {
+    console.error("Gagal kompres foto:", err);
+    alert("Waduh, ada yang gagal dikompres fotonya ndes!");
+  } finally {
+    setLoading(false); // Matikan loading setelah selesai
+  }
   };
 
   // Handler Upload Foto Menu (Tanpa Limit)
