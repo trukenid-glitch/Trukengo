@@ -14,7 +14,7 @@ const URL_BACKEND = "https://trukengo.onrender.com/api/ping";
 
 // MIDDLEWARE
 app.use(cors({
-  origin: process.env.FRONTEND_URL || process.env.DOMAIN_URL || 'http://localhost:5173', // Ijin buat Vercel
+  origin: '*', // Ijin buat Vercel
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
