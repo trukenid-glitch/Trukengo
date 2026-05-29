@@ -66,16 +66,54 @@ export default function AddStore() {
   };
 
   const getMyLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition((pos) => {
+  if (navigator.geolocation) {
+    setLoading(true);
+    navigator.geolocation.getCurrentPosition((pos) => {
+      const { latitude, longitude } = pos.coords;
+      const geocoder = new google.maps.Geocoder();
+      const latlng = { lat: latitude, lng: longitude };
+
+      geocoder.geocode({ location: latlng }, (results, status) => {
+        let finalAddress = "";
+
+        if (status === "OK" && results[0]) {
+          const components = results[0].address_components;
+          
+          // 1. Ambil nama Desa (Level 4)
+          const desa = components.find(c => c.types.includes("administrative_area_level_4"));
+          // 2. Ambil nama Kecamatan (Level 3)
+          const kecamatan = components.find(c => c.types.includes("administrative_area_level_3"));
+
+          if (desa && kecamatan) {
+            // Hasilnya: "Sedayu, Gemuh"
+            finalAddress = `${desa.long_name}, ${kecamatan.long_name}`;
+          } else if (kecamatan) {
+            // Kalau desanya nggak ketemu, minimal ada kecamatannya
+            finalAddress = kecamatan.long_name;
+          } else {
+            // Cadangan terakhir kalau dua-duanya nggak dapet dari komponen
+            const fallback = results[0].formatted_address.split(',')[0];
+            finalAddress = fallback.includes('+') ? "Lokasi Terdeteksi" : fallback;
+          }
+        } else {
+          finalAddress = "Lokasi Terdeteksi";
+        }
+
         setFormData({
           ...formData,
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
+          latitude,
+          longitude,
+          address: finalAddress, 
         });
+        setLoading(false);
       });
-    }
-  };
+
+    }, (err) => {
+      alert("Gagal ambil lokasi, ndes!");
+      setLoading(false);
+    });
+  }
+};
 
   const handleProductUpload = (e) => {
     const files = Array.from(e.target.files);
@@ -115,6 +153,11 @@ export default function AddStore() {
       setMenuFiles(filtered);
     }
   };
+
+  const handleAddressChange = (e) => {
+    setFormData({ ...formData, address: e.target.value });
+  };
+
   const handleSaveStore = async () => {
     try {
       setLoading(true);
@@ -311,14 +354,16 @@ export default function AddStore() {
         </section>
 
         {/* SECTION 3: LOKASI */}
+        {/* SECTION 3: LOKASI */}
         <section className="bg-white p-6 rounded-[32px] shadow-sm border border-gray-100 space-y-4">
           <label className="text-[10px] font-black text-gray-900 uppercase tracking-widest block px-1">
-            Lokasi Toko
+            Lokasi Toko (Titik Map & Alamat)
           </label>
 
           <div className="flex gap-2">
             <div className="flex-1">
-              {isLoaded && (
+              {/* Autocomplete tetap ada tapi inputnya kita kontrol manual */}
+              {isLoaded ? (
                 <Autocomplete
                   onLoad={(auto) => (autocompleteRef.current = auto)}
                   onPlaceChanged={onPlaceChanged}
@@ -329,23 +374,37 @@ export default function AddStore() {
                       size={18}
                     />
                     <input
-                      placeholder="Cari alamat toko..."
+                      name="address"
+                      value={formData.address}
+                      onChange={handleAddressChange} // User bebas ngetik manual di sini
+                      placeholder="Ketik alamat manual atau cari..."
                       className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-4 text-sm focus:ring-2 focus:ring-blue-500 transition-all"
                     />
                   </div>
                 </Autocomplete>
+              ) : (
+                <div className="bg-gray-100 animate-pulse h-12 rounded-2xl"></div>
               )}
             </div>
+            
             <button
               onClick={getMyLocation}
               type="button"
-              className="bg-blue-50 text-blue-600 p-4 rounded-2xl hover:bg-blue-100 transition-all active:scale-90"
+              className={`p-4 rounded-2xl transition-all active:scale-90 flex items-center justify-center
+                ${loading ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-100'}`}
+              disabled={loading}
             >
-              <Navigation size={20} />
+              <Navigation size={20} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
 
-          <div className="h-48 rounded-2xl overflow-hidden border border-gray-100">
+          {/* Info Koordinat biar Admin tau titiknya bener */}
+          <div className="flex gap-4 px-2">
+             <div className="text-[9px] font-bold text-gray-400 uppercase">LAT: {formData.latitude.toFixed(6)}</div>
+             <div className="text-[9px] font-bold text-gray-400 uppercase">LONG: {formData.longitude.toFixed(6)}</div>
+          </div>
+
+          <div className="h-80 rounded-2xl overflow-hidden border border-gray-100 shadow-inner">
             {isLoaded && (
               <MapSection
                 adminLocation={{
@@ -362,6 +421,9 @@ export default function AddStore() {
               />
             )}
           </div>
+          <p className="text-[9px] text-gray-400 italic px-2">
+            *Tips: Klik pada peta untuk menentukan titik koordinat jastip yang presisi.
+          </p>
         </section>
 
         {/* SECTION 4: FOTO MENU */}

@@ -11,6 +11,7 @@ export default function TikTokBarrier() {
   const [isInApp, setIsInApp] = useState(false);
   const [detectedApp, setDetectedApp] = useState("");
   const [copied, setCopied] = useState(false);
+  const isTikTok = detectedApp === "TikTok";
 
   useEffect(() => {
     // Deteksi apakah user-agent mengandung kata TikTok / Instagram / Facebook (in-app browsers)
@@ -39,7 +40,7 @@ export default function TikTokBarrier() {
         const withoutProtocol = href.replace(/^https?:\/\//, "");
         const intentUrl = `intent://${withoutProtocol}#Intent;scheme=https;package=com.android.chrome;end`;
         window.location.href = intentUrl;
-        // Jika intent gagal, fallback ke copy setelah short delay
+        // Jika intent gagal atau TikTok menahan, fallback ke copy setelah short delay
         setTimeout(() => handleCopyLink(), 800);
         return;
       }
@@ -102,7 +103,7 @@ export default function TikTokBarrier() {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-blue-200 active:scale-95 transition-all"
             >
               <Monitor size={20} />
-              Buka di Browser (Otomatis)
+              {isTikTok ? "Coba Buka di Browser" : "Buka di Browser (Otomatis)"}
             </button>
 
             {/* Tombol Cadangan: Salin Link */}
@@ -124,11 +125,23 @@ export default function TikTokBarrier() {
             <div className="flex items-start gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-tight">
               <div className="bg-gray-100 p-1 rounded-md text-gray-500">INFO</div>
               <div>
-                <p>Jika tombol otomatis tidak bekerja:</p>
-                <ul className="list-disc ml-4 text-[12px] text-gray-500">
-                  <li>Tekan "Salin Link Manual" lalu buka Chrome/Safari.</li>
-                  <li>Atau tekan menu (⋮ / …) di pojok kanan atas dan pilih "Buka di browser".</li>
-                </ul>
+                {isTikTok ? (
+                  <>
+                    <p>TikTok sering menahan halaman di browser internal meski link eksternal sudah dipilih.</p>
+                    <ul className="list-disc ml-4 text-[12px] text-gray-500">
+                      <li>Jika tidak langsung keluar, pilih menu TikTok lalu "Open in Browser".</li>
+                      <li>Atau tekan "Salin Link Manual" dan buka link di Chrome/Safari.</li>
+                    </ul>
+                  </>
+                ) : (
+                  <>
+                    <p>Jika tombol otomatis tidak bekerja:</p>
+                    <ul className="list-disc ml-4 text-[12px] text-gray-500">
+                      <li>Tekan "Salin Link Manual" lalu buka Chrome/Safari.</li>
+                      <li>Atau tekan menu (⋮ / …) di pojok kanan atas dan pilih "Buka di browser".</li>
+                    </ul>
+                  </>
+                )}
               </div>
             </div>
           </div>
