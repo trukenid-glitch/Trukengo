@@ -8,6 +8,7 @@ import PriceCalculator from "../components/PriceCalculator";
 import { ADMIN_LOCATION } from "../utils/constants";
 import { useNavigate } from "react-router-dom";
 import { getBaseLocationOpen } from "../api/adminService";
+import { getPricingConfig } from "../api/customerService";
 
 import "../App.css";
 
@@ -26,6 +27,7 @@ export default function Home() {
   const [directionsResponse, setDirectionsResponse] = useState(null);
   const [distances, setDistances] = useState({ pickup: 0, delivery: 0 });
   const [durations, setDurations] = useState({ pickup: 0, delivery: 0 });
+  const [pricingConfig, setPricingConfig] = useState(null);
   const [adminCoords, setAdminCoords] = useState(ADMIN_LOCATION);
 
   const [showQRIS, setShowQRIS] = useState(false);
@@ -52,6 +54,20 @@ export default function Home() {
       }
     };
     loadAdminPos();
+  }, []);
+
+  useEffect(() => {
+    const loadPricingConfig = async () => {
+      try {
+        const result = await getPricingConfig();
+        if (result.data) {
+          setPricingConfig(result.data);
+        }
+      } catch (err) {
+        console.error("Gagal memuat konfigurasi harga:", err);
+      }
+    };
+    loadPricingConfig();
   }, []);
 
   const handleMapClick = useCallback(
@@ -364,6 +380,7 @@ export default function Home() {
             ref={priceRef}
             distances={distances}
             durations={durations}
+            pricingConfig={pricingConfig}
           />
 
           {/* TOMBOL MENU DI DALAM HOME */}

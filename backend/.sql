@@ -33,3 +33,16 @@ CREATE TABLE stores (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+
+CREATE TABLE app_configs (
+    id SERIAL PRIMARY KEY,
+    pickup_fee_per_km INTEGER DEFAULT 1000,
+    delivery_fee_per_km INTEGER DEFAULT 2000,
+    fixed_jastip_fee INTEGER DEFAULT 2000,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Masukkan data awal (hanya satu kali)
+INSERT INTO app_configs (pickup_fee_per_km, delivery_fee_per_km, fixed_jastip_fee) 
+VALUES (1000, 2000, 2000);

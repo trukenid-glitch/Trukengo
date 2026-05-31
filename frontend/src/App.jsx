@@ -14,6 +14,7 @@ import EditStore from "./pages/super_admin/EditStore";
 // admin
 import AdminDashboard from "./pages/super_admin/AdminDashboard";
 import AddStore from "./pages/super_admin/AddStore";
+import EditConfig from "./pages/super_admin/EditConfig";
 
 export default function App() {
   return (
@@ -68,6 +69,24 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <EditStore />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/super-admin/edit-config" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <EditConfig />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/super-admin/edit-config" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <EditConfig />
             </ProtectedRoute>
           } 
         />

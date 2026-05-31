@@ -33,6 +33,15 @@ export const updateBaseLocation = async (lat, lng, address) => {
   }
 };
 
+export const updatePricingConfig = async (data) => {
+  try {
+    const response = await api.put("/admin/config", data);
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || "Gagal menyimpan konfigurasi harga!";
+  }
+};
+
 // Fungsi untuk menambah toko baru dengan file upload
 export const addStore = async (formData) => {
   try {

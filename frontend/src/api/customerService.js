@@ -19,3 +19,13 @@ export const getStoreDetail = async (id) => {
     throw error.response?.data?.message || "Gagal memuat detail toko!";
   }
 };
+
+// Ambil konfigurasi pricing dari backend
+export const getPricingConfig = async () => {
+  try {
+    const response = await api.get('/customer/config');
+    return response.data;
+  } catch (error) {
+    throw error.response?.data?.message || "Gagal memuat konfigurasi harga!";
+  }
+};

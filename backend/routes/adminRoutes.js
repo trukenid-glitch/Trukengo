@@ -3,6 +3,7 @@ const router = express.Router();
 const {
   getBaseLocation,
   updateLocation,
+  updateAppConfig,
   addStore,
   getAllStores,
   updateStore,
@@ -38,6 +39,9 @@ router.get("/base-location-open", getBaseLocation);
 
 // Update lokasi (Hanya Admin)
 router.put("/update-location", isAdmin, updateLocation);
+
+// Update konfigurasi tarif Jastip (Hanya Admin)
+router.put("/config", isAdmin, updateAppConfig);
 
 // Tambah Toko Baru (Hanya Admin + Handle Foto)
 router.post("/stores", isAdmin, storeUpload, addStore);

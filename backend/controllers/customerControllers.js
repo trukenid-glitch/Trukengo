@@ -25,3 +25,16 @@ exports.getStoreDetail = async (req, res) => {
         res.status(500).json({ message: err.message });
     }
 };
+
+// Ambil konfigurasi pricing dari database
+exports.getAppConfig = async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM app_configs LIMIT 1');
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Konfigurasi pricing tidak ditemukan!' });
+        }
+        res.json({ status: 'success', data: result.rows[0] });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+};

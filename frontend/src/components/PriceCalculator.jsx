@@ -1,37 +1,35 @@
 // src/components/PriceCalculator.jsx
 import { forwardRef } from 'react';
-import { PRICING_CONFIG } from '../utils/constants';
 import { formatRupiah } from '../utils/helpers';
 import { Calculator, Truck, PackageCheck, Wallet, Clock, MapPin } from 'lucide-react';
 
-function PriceCalculatorBase({ distances, durations }, ref) {
+function PriceCalculatorBase({ distances, durations, pricingConfig }, ref) {
   // Kita kasih nilai default 0 kalau variabelnya belum ada
   const { direct = 0, pickup = 0, delivery = 0, isOpposite = false, hasStore = false } = distances || {};
   const { pickup: pTime, delivery: dTime } = durations || { pickup: 0, delivery: 0 };
-  
+  const { pickup_fee_per_km = 0, delivery_fee_per_km = 0, fixed_jastip_fee = 0 } = pricingConfig || {};
+
   // Kalkulasi Biaya
   let pickupCost = 0;
   let deliveryCost = 0;
   let labelAntar = "";
   let jarakAntar = 0;
-  
-
 
   if (hasStore && isOpposite) {
     // LOGIKA NOMOR 2: BERLAWANAN ARAH
-    pickupCost = pickup * PRICING_CONFIG.PICKUP_FEE_PER_KM;          // Lokasi awal ke Toko x 1000
-    deliveryCost = delivery * PRICING_CONFIG.DELIVERY_FEE_PER_KM;      // Toko ke Tujuan x 2000
+    pickupCost = pickup * pickup_fee_per_km;
+    deliveryCost = delivery * delivery_fee_per_km;
     jarakAntar = delivery;
     labelAntar = "Antar Barang (Dari Toko)";
   } else {
     // LOGIKA NOMOR 1: SEARAH (atau tanpa toko)
     pickupCost = 0;                      // Gratis biaya jemput
-    deliveryCost = direct * PRICING_CONFIG.DELIVERY_FEE_PER_KM;        // Lokasi awal ke Tujuan x 2000
+    deliveryCost = direct * delivery_fee_per_km;
     jarakAntar = direct;
     labelAntar = "Ongkir Utama";
   }
 
-  const totalCost = deliveryCost + pickupCost + PRICING_CONFIG.FIXED_JASTIP_FEE;
+  const totalCost = deliveryCost + pickupCost + fixed_jastip_fee;
   const totalTime = pTime + dTime;
 
     // Render state kosong jika belum ada perhitungan
@@ -76,7 +74,7 @@ function PriceCalculatorBase({ distances, durations }, ref) {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-800">Ambil Barang</p>
-                <p className="text-xs text-gray-500">{pickup.toFixed(1)} km x Rp 1.000/km</p>
+                <p className="text-xs text-gray-500">{pickup.toFixed(1)} km x {formatRupiah(pickup_fee_per_km)}/km</p>
               </div>
             </div>
             <span className="text-sm font-semibold text-gray-800">{formatRupiah(pickupCost)}</span>
@@ -91,7 +89,7 @@ function PriceCalculatorBase({ distances, durations }, ref) {
             </div>
             <div>
               <p className="text-sm font-medium text-gray-800">{labelAntar}</p>
-              <p className="text-xs text-gray-500">{jarakAntar.toFixed(1)} km x {formatRupiah(PRICING_CONFIG.DELIVERY_FEE_PER_KM)}/km</p>
+              <p className="text-xs text-gray-500">{jarakAntar.toFixed(1)} km x {formatRupiah(delivery_fee_per_km)}/km</p>
             </div>
           </div>
           <span className="text-sm font-semibold text-gray-800">{formatRupiah(deliveryCost)}</span>
@@ -108,7 +106,7 @@ function PriceCalculatorBase({ distances, durations }, ref) {
               <span className="text-[10px] text-gray-400 line-through decoration-red-400 block">{formatRupiah(5000)}</span>
             </div>
           </div>
-          <span className="text-sm font-semibold text-black">{formatRupiah(PRICING_CONFIG.FIXED_JASTIP_FEE)}</span>
+          <span className="text-sm font-semibold text-black">{formatRupiah(fixed_jastip_fee)}</span>
         </div>
 
         <div className="flex justify-between items-center pt-2">
