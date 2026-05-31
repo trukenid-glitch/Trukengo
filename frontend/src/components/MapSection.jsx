@@ -18,11 +18,15 @@ export default function MapSection({
 }) {
   const mapRef = useRef(null);
 
+  const DEFAULT_CENTER = { lat: -6.9147, lng: 110.2037 };
+  const isValidLatLng = (loc) =>
+    loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng);
+
   useEffect(() => {
     const resizeMap = () => {
       if (mapRef.current && window.google && window.google.maps) {
         window.google.maps.event.trigger(mapRef.current, "resize");
-        mapRef.current.panTo(adminLocation);
+        if (isValidLatLng(adminLocation)) mapRef.current.panTo(adminLocation);
       }
     };
 
@@ -37,25 +41,27 @@ export default function MapSection({
   useEffect(() => {
     if (mapRef.current && window.google && window.google.maps) {
       window.google.maps.event.trigger(mapRef.current, "resize");
-      mapRef.current.panTo(adminLocation);
+      if (isValidLatLng(adminLocation)) mapRef.current.panTo(adminLocation);
     }
   }, [adminLocation]);
 
   return (
     <GoogleMap
       mapContainerStyle={containerStyle}
-      center={adminLocation}
+      center={isValidLatLng(adminLocation) ? adminLocation : DEFAULT_CENTER}
       zoom={13}
       options={MAP_OPTIONS}
       onLoad={handleMapLoad}
       onClick={onMapClick}
     >
       {/* Marker Admin Selalu Muncul */}
-      <Marker
-        position={adminLocation}
-        label={{ text: "A", color: "white", fontWeight: "bold" }}
-        title="Lokasi Admin (Jastiper)"
-      />
+      {isValidLatLng(adminLocation) && (
+        <Marker
+          position={adminLocation}
+          label={{ text: "A", color: "white", fontWeight: "bold" }}
+          title="Lokasi Admin (Jastiper)"
+        />
+      )}
 
       {/* Tampilkan Marker satuan jika rute belum digambar */}
       {!directionsResponse && storeLocation && (

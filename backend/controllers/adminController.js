@@ -1,5 +1,5 @@
 const pool = require('../db');
-const { uploadToR2 } = require('../utils/s3Upload')
+const { uploadToR2, deleteFromR2 } = require('../utils/s3Upload')
 
 // Ambil lokasi basecamp saat ini
 exports.getBaseLocation = async (req, res) => {
@@ -93,5 +93,136 @@ exports.addStore = async (req, res) => {
             status: "error", 
             message: "Gagal simpan toko: " + err.message 
         });
+    }
+};
+
+// Ambil semua daftar toko untuk admin
+exports.getAllStores = async (req, res) => {
+    try {
+        const query = `
+            SELECT id, store_name, address, latitude, longitude, category, is_open 
+            FROM stores 
+            ORDER BY created_at DESC;
+        `;
+        const result = await pool.query(query);
+
+        res.status(200).json({
+            status: "success",
+            data: result.rows
+        });
+    } catch (err) {
+        console.error("Error Get All Stores:", err.message);
+        res.status(500).json({ 
+            status: "error", 
+            message: "Aduh ndes, gagal ambil data toko dari database!" 
+        });
+    }
+};
+
+exports.deleteStore = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const selectQuery = `SELECT product_photos, menu_photos FROM stores WHERE id = $1;`;
+        const selectResult = await pool.query(selectQuery, [id]);
+
+        if (!selectResult.rows.length) {
+            return res.status(404).json({ status: "error", message: "Toko tidak ditemukan." });
+        }
+
+        const { product_photos: dbProductPhotos = [], menu_photos: dbMenuPhotos = [] } = selectResult.rows[0];
+        const filesToDelete = [...dbProductPhotos, ...dbMenuPhotos].filter(Boolean);
+
+        await Promise.all(
+            filesToDelete.map(async (fileUrl) => {
+                try {
+                    await deleteFromR2(fileUrl);
+                } catch (err) {
+                    console.error(`Gagal menghapus file R2 ${fileUrl}:`, err.message);
+                }
+            })
+        );
+
+        const deleteQuery = `DELETE FROM stores WHERE id = $1 RETURNING *;`;
+        const result = await pool.query(deleteQuery, [id]);
+
+        if (!result.rows.length) {
+            return res.status(404).json({ status: "error", message: "Toko tidak ditemukan." });
+        }
+
+        res.json({ status: "success", message: "Toko berhasil dihapus.", data: result.rows[0] });
+    } catch (err) {
+        console.error("Error Delete Store:", err.message);
+        res.status(500).json({ status: "error", message: err.message });
+    }
+};
+
+exports.updateStore = async (req, res) => {
+    const { id } = req.params;
+    const { store_name, price, operating_hours, address, category, description, latitude, longitude, existing_product_photos, existing_menu_photos } = req.body;
+
+    try {
+        const selectQuery = `SELECT product_photos, menu_photos FROM stores WHERE id = $1;`;
+        const selectResult = await pool.query(selectQuery, [id]);
+
+        if (!selectResult.rows.length) {
+            return res.status(404).json({ status: "error", message: "Toko tidak ditemukan." });
+        }
+
+        const { product_photos: dbProductPhotos = [], menu_photos: dbMenuPhotos = [] } = selectResult.rows[0];
+        const previousProductPhotos = Array.isArray(existing_product_photos)
+            ? existing_product_photos
+            : JSON.parse(existing_product_photos || '[]');
+        const previousMenuPhotos = Array.isArray(existing_menu_photos)
+            ? existing_menu_photos
+            : JSON.parse(existing_menu_photos || '[]');
+
+        const removedProductPhotos = dbProductPhotos.filter((url) => !previousProductPhotos.includes(url));
+        const removedMenuPhotos = dbMenuPhotos.filter((url) => !previousMenuPhotos.includes(url));
+
+        await Promise.all(
+            [...removedProductPhotos, ...removedMenuPhotos]
+                .filter(Boolean)
+                .map(async (fileUrl) => {
+                    try {
+                        await deleteFromR2(fileUrl);
+                    } catch (err) {
+                        console.error(`Gagal menghapus file R2 yang tidak lagi dipakai ${fileUrl}:`, err.message);
+                    }
+                })
+        );
+
+        let finalProductPhotos = [...previousProductPhotos];
+        let finalMenuPhotos = [...previousMenuPhotos];
+
+        if (req.files && req.files.product_photos) {
+            const newProductUrls = await Promise.all(
+                req.files.product_photos.map((file) => uploadToR2(file, "product_photos"))
+            );
+            finalProductPhotos = [...finalProductPhotos, ...newProductUrls];
+        }
+
+        if (req.files && req.files.menu_photos) {
+            const newMenuUrls = await Promise.all(
+                req.files.menu_photos.map((file) => uploadToR2(file, "menu_photos"))
+            );
+            finalMenuPhotos = [...finalMenuPhotos, ...newMenuUrls];
+        }
+
+        const query = `
+            UPDATE stores 
+            SET store_name = $1, price = $2, operating_hours = $3, address = $4, 
+                category = $5, description = $6, latitude = $7, longitude = $8, 
+                product_photos = $9, menu_photos = $10, updated_at = NOW()
+            WHERE id = $11 RETURNING *;
+        `;
+        
+        const values = [store_name, price, operating_hours, address, category, description, latitude, longitude, finalProductPhotos, finalMenuPhotos, id];
+        const result = await pool.query(query, values);
+
+        res.json({ status: "success", data: result.rows[0] });
+    } catch (err) {
+        console.error("Error Update Store:", err.message);
+        res.status(500).json({ message: err.message });
     }
 };

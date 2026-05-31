@@ -7,6 +7,7 @@ import {
     Settings, 
     Store, 
     LogOut, 
+    Pencil,
     ChevronRight 
 } from 'lucide-react';
 
@@ -90,6 +91,23 @@ export default function AdminDashboard() {
                     className="w-full bg-blue-600 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 mt-4"
                 >
                     Tambah Toko / Menu
+                </button>
+                </div>
+            </div>
+
+            {/* Kelola toko */}
+            <div className="bg-white p-6 rounded-[24px] shadow-sm border border-gray-100">
+                <div className="w-12 h-12 bg-amber-600 text-white rounded-2xl flex items-center justify-center mb-4">
+                <Store size={24} />
+                </div>
+                <h3 className="font-bold text-gray-800">Produk & Toko</h3>
+                <p className="text-xs text-gray-500 mb-4">Kelola mitra toko</p>
+                <div className="space-y-2">
+                <button 
+                    onClick={() => navigate('/super-admin/kelola-toko')}
+                    className="w-full bg-blue-600 text-white py-3 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20 mt-4"
+                >
+                    Kelola Toko
                 </button>
                 </div>
             </div>

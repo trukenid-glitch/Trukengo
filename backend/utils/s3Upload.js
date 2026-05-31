@@ -1,6 +1,6 @@
 // src/utils/s3Upload.js
 
-const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const { s3Client } = require("../config/r2"); // Hilangkan ekstensi .js kalau pakai require
 const path = require("path");
 
@@ -25,5 +25,39 @@ const uploadToR2 = async (file, folder) => {
   }
 };
 
+const getR2KeyFromUrl = (fileUrl) => {
+  try {
+    const url = new URL(fileUrl);
+    let key = url.pathname.replace(/^\/+/, "");
+    if (key.startsWith("trukengo-storage/")) {
+      key = key.slice("trukengo-storage/".length);
+    }
+    return key;
+  } catch (err) {
+    console.error("R2 Delete helper invalid URL:", fileUrl, err);
+    return null;
+  }
+};
+
+const deleteFromR2 = async (fileUrl) => {
+  const Key = getR2KeyFromUrl(fileUrl);
+  if (!Key) {
+    throw new Error(`Invalid R2 URL: ${fileUrl}`);
+  }
+
+  const params = {
+    Bucket: "trukengo-storage",
+    Key,
+  };
+
+  try {
+    await s3Client.send(new DeleteObjectCommand(params));
+    return true;
+  } catch (err) {
+    console.error("R2 Delete Error:", err, fileUrl);
+    throw err;
+  }
+};
+
 // Export menggunakan gaya CommonJS
-module.exports = { uploadToR2 };
+module.exports = { uploadToR2, deleteFromR2 };

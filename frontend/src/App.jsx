@@ -7,6 +7,8 @@ import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import UpdateBaseLocation from "./pages/super_admin/UpdateBaseLocation";
 import TikTokBarrier from "./components/TikTokBarrier";
+import ManageStores from "./pages/super_admin/ManageStores";
+import EditStore from "./pages/super_admin/EditStore";
 
 
 // admin
@@ -48,6 +50,24 @@ export default function App() {
           element={
             <ProtectedRoute allowedRoles={['admin']}>
               <AddStore />
+            </ProtectedRoute>
+          } 
+        />
+
+        <Route 
+          path="/super-admin/kelola-toko" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <ManageStores />
+            </ProtectedRoute>
+          } 
+        />
+      
+        <Route 
+          path="/super-admin/edit-toko/:id" 
+          element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <EditStore />
             </ProtectedRoute>
           } 
         />
