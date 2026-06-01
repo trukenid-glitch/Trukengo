@@ -9,9 +9,10 @@ import {
   X,
   ZoomIn,
   Navigation,
-  DollarSign
+  DollarSign,
 } from "lucide-react";
-import { getStoreDetail } from "../api/customerService";
+import { getStoreDetail, getPricingConfig } from "../api/customerService";
+import { getBaseLocationOpen } from "../api/adminService";
 
 export default function DetailMenu() {
   const { id } = useParams(); // Ambil ID dari URL
@@ -27,6 +28,116 @@ export default function DetailMenu() {
   const [extraMenu, setExtraMenu] = useState(""); // Buat menu tambahan dari daftar toko
   const [userLocation, setUserLocation] = useState("");
   const [isLocating, setIsLocating] = useState(false);
+
+  // State baru untuk Shipping Fee Calculator
+  const [shippingFee, setShippingFee] = useState(0);
+  const [distanceInfo, setDistanceInfo] = useState(null);
+  const [calcStep, setCalcStep] = useState("idle");
+
+  const isProcessing = [
+    "fetching_base",
+    "calc_pickup",
+    "calc_delivery",
+  ].includes(calcStep);
+  const calcStatusLabel =
+    calcStep === "fetching_base"
+      ? "Mencari Basecamp..."
+      : calcStep === "calc_pickup"
+        ? "Menuju Toko..."
+        : calcStep === "calc_delivery"
+          ? "Simulasi ke Rumahmu..."
+          : calcStep === "done"
+            ? "Perhitungan selesai"
+            : "";
+  const progressWidth =
+    calcStep === "fetching_base"
+      ? "20%"
+      : calcStep === "calc_pickup"
+        ? "60%"
+        : calcStep === "calc_delivery"
+          ? "100%"
+          : "0%";
+
+  // Haversine Formula - Hitung jarak antara 2 koordinat (dalam KM)
+  const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius bumi dalam KM
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c; // Jarak dalam KM
+  };
+
+  // Fungsi untuk Calculate Shipping Fee
+  const handleCalculateShipping = async () => {
+    if (!produk) return;
+
+    try {
+      // Step 1: Get customer location using geolocation
+      setCalcStep("fetching_base");
+      const customerCoords = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => resolve(position.coords),
+          reject,
+        );
+      });
+
+      // Step 2: Fetch base location (admin/driver)
+      const baseLocationData = await getBaseLocationOpen();
+      const adminCoords = baseLocationData.data;
+
+      // Step 3: Calculate pickup distance (admin -> store)
+      setCalcStep("calc_pickup");
+      const pickupDistance = calculateHaversineDistance(
+        adminCoords.latitude,
+        adminCoords.longitude,
+        produk.latitude,
+        produk.longitude,
+      );
+
+      // Step 4: Calculate delivery distance (store -> customer)
+      setCalcStep("calc_delivery");
+      const deliveryDistance = calculateHaversineDistance(
+        produk.latitude,
+        produk.longitude,
+        customerCoords.latitude,
+        customerCoords.longitude,
+      );
+
+      // Step 5: Fetch pricing config
+      const pricingData = await getPricingConfig();
+      const config = pricingData.data;
+
+      // Step 6: Calculate total shipping fee
+      const totalShipping =
+        pickupDistance * config.pickup_fee_per_km +
+        deliveryDistance * config.delivery_fee_per_km +
+        config.fixed_jastip_fee;
+
+      // Step 7: Set location name and save shipping fee
+      setCalcStep("done");
+      setUserLocation(
+        `${customerCoords.latitude.toFixed(4)}, ${customerCoords.longitude.toFixed(4)}`,
+      );
+      setDistanceInfo({
+        pickup: pickupDistance,
+        delivery: deliveryDistance,
+        pickupFeePerKm: config.pickup_fee_per_km,
+        deliveryFeePerKm: config.delivery_fee_per_km,
+        fixedFee: config.fixed_jastip_fee,
+      });
+      setShippingFee(Math.round(totalShipping));
+    } catch (error) {
+      console.error("Error calculating shipping:", error);
+      alert("Gagal hitung ongkir, pastikan GPS aktif!");
+      setCalcStep("idle");
+    }
+  };
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -54,35 +165,28 @@ export default function DetailMenu() {
 
     if (!userLocation.trim()) {
       alert(
-        "Alamatnya jangan lupa diisi atau klik tombol GPS biar gak nyasar!",
+        "Alamatnya jangan lupa diisi atau klik tombol 'Cek & Hitung Ongkir'!",
       );
       return; // Berhenti di sini juga
     }
 
     const phoneNumber = "62895379007437"; // No WA Truken
-    const message = `Halo Truken! %0A%0ASaya mau pesan Jastip *${produk.store_name}* %0A%0A*Dengan Menu:*%0A${extraMenu || "-"}%0A%0A*Catatan Khusus:*%0A${note || "-"}%0A%0A*Lokasi Warung:* ${produk.address}%0A---------------------------%0A%0A*Lokasi Pengiriman:*%0A${userLocation || "Belum diisi"}%0A%0A---------------------------%0A*Mohon segera diproses yaaa*`;
+
+    // Rincian ongkir jika sudah dihitung
+    let shippingDetails = "";
+    if (distanceInfo && shippingFee > 0) {
+      const pickupCost = Math.round(
+        distanceInfo.pickup * distanceInfo.pickupFeePerKm,
+      );
+      const deliveryCost = Math.round(
+        distanceInfo.delivery * distanceInfo.deliveryFeePerKm,
+      );
+      shippingDetails = `%0A%0A*RINCIAN ONGKIR:*%0A📍 Jarak Jemput: ${distanceInfo.pickup.toFixed(2)} KM%0A📍 Jarak Antar: ${distanceInfo.delivery.toFixed(2)} KM%0A%0A💰 Biaya Jemput: Rp ${pickupCost.toLocaleString("id-ID")}%0A💰 Biaya Antar: Rp ${deliveryCost.toLocaleString("id-ID")}%0A💰 Fee Jastip Tetap: Rp ${distanceInfo.fixedFee.toLocaleString("id-ID")}%0A%0A🔴 *TOTAL ONGKIR: Rp ${shippingFee.toLocaleString("id-ID")}*`;
+    }
+
+    const message = `Halo Truken! %0A%0ASaya mau pesan Jastip *${produk.store_name}* %0A%0A*Dengan Menu:*%0A${extraMenu || "-"}%0A%0A*Catatan Khusus:*%0A${note || "-"}%0A%0A*Lokasi Warung:* ${produk.address}%0A---------------------------%0A%0A*Lokasi Pengiriman:*%0A${userLocation || "Belum diisi"}${shippingDetails}%0A%0A---------------------------%0A*Mohon segera diproses yaaa*`;
 
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
-  };
-
-  const handleGetMyLocation = () => {
-    if (!navigator.geolocation)
-      return alert("Browser kamu nggak support GPS ndes!");
-
-    setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        // Kita buat format link Maps biar kamu gampang ngekliknya nanti di WA
-        const mapsUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
-        setUserLocation(mapsUrl);
-        setIsLocating(false);
-      },
-      () => {
-        alert("Gagal ambil lokasi, aktifin GPS-mu ndes!");
-        setIsLocating(false);
-      },
-    );
   };
 
   if (loading) {
@@ -175,12 +279,12 @@ export default function DetailMenu() {
         {/* Konten Detail */}
         <div className="p-6 mt-5 bg-white rounded-t-[32px] relative z-10 ">
           <div className="flex justify-between items-start mb-4 gap-4">
-          <div className="flex-1">
-            <h1 className="text-2xl font-black text-slate-900 leading-none capitalize tracking-tighter mb-1">
-              {produk.store_name}
-            </h1>
+            <div className="flex-1">
+              <h1 className="text-2xl font-black text-slate-900 leading-none capitalize tracking-tighter mb-1">
+                {produk.store_name}
+              </h1>
+            </div>
           </div>
-        </div>
 
           <div className="grid grid-cols-1 gap-3 mb-8">
             {/* Baris Lokasi */}
@@ -188,7 +292,9 @@ export default function DetailMenu() {
               <div className="bg-white p-2 rounded-xl shadow-sm text-gray-800">
                 <MapPin size={18} />
               </div>
-              <span className="text-sm font-semibold text-slate-700">{produk.address}</span>
+              <span className="text-sm font-semibold text-slate-700">
+                {produk.address}
+              </span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -197,7 +303,9 @@ export default function DetailMenu() {
                 <div className="bg-white p-2 rounded-xl shadow-sm text-gray-800">
                   <Clock size={18} />
                 </div>
-                <span className="text-xs font-bold text-slate-700">{produk.operating_hours}</span>
+                <span className="text-xs font-bold text-slate-700">
+                  {produk.operating_hours}
+                </span>
               </div>
 
               {/* Baris Harga */}
@@ -206,19 +314,22 @@ export default function DetailMenu() {
                   <DollarSign size={18} />
                 </div>
                 <div>
-                  <p className="text-[8px] font-black text-slate-800 uppercase leading-none mb-1">Mulai Dari</p>
-                  <p className="text-xs font-black text-slate-800">Rp {parseInt(produk.price).toLocaleString()}</p>
+                  <p className="text-[8px] font-black text-slate-800 uppercase leading-none mb-1">
+                    Mulai Dari
+                  </p>
+                  <p className="text-xs font-black text-slate-800">
+                    Rp {parseInt(produk.price).toLocaleString()}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           <div className="relative border-t border-dashed border-slate-200 pt-6">
-            
             <h2 className="text-xs font-black text-slate-400 capitalize mb-3 tracking-[0.2em]">
               TENTANG MAKANAN INI
             </h2>
-            
+
             <p className="text-slate-600 leading-relaxed text-sm font-medium italic">
               "{produk.description}"
             </p>
@@ -375,39 +486,82 @@ export default function DetailMenu() {
               {/* 4. INPUT LOKASI PENGIRIMAN */}
               <div className="mb-8">
                 <label className="text-[10px] font-black text-gray-800 uppercase tracking-widest block mb-3 leading-none">
-                  Lokasi Pengiriman / Alamat
+                  Lokasi Pengiriman / Ongkir
                 </label>
-                <div className="relative flex items-center">
-                  <input
-                    type="text"
-                    value={userLocation}
-                    onChange={(e) => setUserLocation(e.target.value)}
-                    placeholder="klik tombol GPS"
-                    className="w-full bg-gray-50 border border-gray-500 rounded-2xl p-4 pr-32 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
-
-                  {/* Tombol GPS di dalam Input */}
-                  <button
-                    onClick={handleGetMyLocation}
-                    disabled={isLocating}
-                    className={`absolute right-2 px-3 py-2 rounded-xl text-[10px] font-black uppercase flex items-center gap-1.5 transition-all
-                      ${
-                        isLocating
-                          ? "bg-gray-200 text-gray-400"
-                          : "bg-blue-600 text-white shadow-lg shadow-blue-200 active:scale-95"
-                      }`}
-                  >
-                    <Navigation
-                      size={12}
-                      className={isLocating ? "animate-spin" : "animate-pulse"}
-                    />
-                    {isLocating ? "Wait..." : "GPS"}
-                  </button>
-                </div>
-                <p className="text-[9px] text-gray-500 mt-2 italic">
-                  *Klik tombol GPS!
-                </p>
+                <button
+                  onClick={handleCalculateShipping}
+                  disabled={isProcessing}
+                  className={`w-full rounded-2xl px-5 py-4 text-sm font-black uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all duration-200 ${
+                    isProcessing
+                      ? "bg-gray-600 text-white cursor-not-allowed"
+                      : "bg-amber-700 text-white shadow-lg hover:bg-amber-700 "
+                  }`}
+                >
+                  <span className="text-lg">📍</span>
+                  <span>Cek Ongkir</span>
+                </button>
               </div>
+
+              {calcStep === "done" && distanceInfo && (
+                <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500 font-black mb-2">
+                        Jarak Jemput
+                      </p>
+                      <p className="text-base font-black text-slate-900">
+                        {distanceInfo.pickup.toFixed(2)} KM
+                      </p>
+                    </div>
+                    <div className="rounded-2xl bg-slate-50 p-4">
+                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500 font-black mb-2">
+                        Jarak Antar
+                      </p>
+                      <p className="text-base font-black text-slate-900">
+                        {distanceInfo.delivery.toFixed(2)} KM
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 bg-slate-50 rounded-3xl p-4">
+                    <div className="flex justify-between items-center text-sm text-slate-700">
+                      <span>Ongkir Jemput</span>
+                      <span>
+                        Rp{" "}
+                        {Math.round(
+                          distanceInfo.pickup * distanceInfo.pickupFeePerKm,
+                        ).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-slate-700">
+                      <span>Ongkir Antar</span>
+                      <span>
+                        Rp{" "}
+                        {Math.round(
+                          distanceInfo.delivery * distanceInfo.deliveryFeePerKm,
+                        ).toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-slate-700">
+                      <span>Fee Jastip</span>
+                      <span>
+                        Rp {distanceInfo.fixedFee.toLocaleString("id-ID")}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <span className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
+                      TOTAL ONGKIR
+                    </span>
+                    <span className="text-3xl font-black text-slate-900">
+                      Rp {shippingFee.toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. INPUT CATATAN */}
 
               {/* 3. INPUT CATATAN */}
               <div className="mb-8">
@@ -426,19 +580,25 @@ export default function DetailMenu() {
               {/* // Di dalam return modal, pada bagian tombol KIRIM PESANAN */}
               <button
                 onClick={handleOrderWA}
-                disabled={!extraMenu || !userLocation} // Tombol jadi mati kalau belum diisi
+                disabled={!extraMenu.trim() || calcStep !== "done"}
                 className={`w-full py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all active:scale-95
                 ${
-                  !extraMenu || !userLocation
-                    ? "bg-gray-300 cursor-not-allowed opacity-70" // Warna abu-abu kalau belum lengkap
+                  !extraMenu.trim() || calcStep !== "done"
+                    ? "bg-gray-300 cursor-not-allowed opacity-70"
                     : "bg-blue-600 hover:bg-blue-800 text-white shadow-xl shadow-blue-200"
                 }`}
               >
                 <ShoppingCart size={20} />
-                {!extraMenu || !userLocation
-                  ? "LENGKAPI DATA DULU"
-                  : "KIRIM PESANAN"}
+                {!extraMenu.trim() || calcStep !== "done"
+                  ? "LENGKAPI DATA & CEK ONGKIR"
+                  : "🛒 KIRIM PESANAN"}
               </button>
+
+              {shippingFee > 0 && (
+                <p className="text-[9px] text-gray-500 mt-3 text-center italic">
+                  *Ongkir sudah dihitung dan akan ditampilkan di pesan WhatsApp
+                </p>
+              )}
             </div>
           </div>
         )}
