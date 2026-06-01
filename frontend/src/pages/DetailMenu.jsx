@@ -1,5 +1,5 @@
 // src/pages/DetailMenu.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -7,31 +7,38 @@ import {
   Clock,
   ShoppingCart,
   X,
-  ZoomIn,
-  Navigation,
   DollarSign,
 } from "lucide-react";
+import { useJsApiLoader } from "@react-google-maps/api";
 import { getStoreDetail, getPricingConfig } from "../api/customerService";
 import { getBaseLocationOpen } from "../api/adminService";
+import PriceCalculator from "../components/PriceCalculator";
+
+const libraries = ["places"];
 
 export default function DetailMenu() {
-  const { id } = useParams(); // Ambil ID dari URL
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [produk, setProduk] = useState(null); // Mulai dengan null
-  const [loading, setLoading] = useState(true);
-  const [showGallery, setShowGallery] = useState(false);
-  const [selectedImg, setSelectedImg] = useState(null);
-  // Di dalam function DetailMenu
-  const [showOrderModal, setShowOrderModal] = useState(false);
-  const [qty, setQty] = useState(1);
-  const [note, setNote] = useState("");
-  const [extraMenu, setExtraMenu] = useState(""); // Buat menu tambahan dari daftar toko
-  const [userLocation, setUserLocation] = useState("");
-  const [isLocating, setIsLocating] = useState(false);
+  const priceCalcRef = useRef(null);
 
-  // State baru untuk Shipping Fee Calculator
+  // Load Google Maps API
+  const { isLoaded: mapsLoaded } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries,
+  });
+
+  const [produk, setProduk] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedImg, setSelectedImg] = useState(null);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [note, setNote] = useState("");
+  const [extraMenu, setExtraMenu] = useState("");
+  const [userLocation, setUserLocation] = useState("");
+
+  // Shipping Fee Calculator State
   const [shippingFee, setShippingFee] = useState(0);
   const [distanceInfo, setDistanceInfo] = useState(null);
+  const [pricingConfig, setPricingConfig] = useState(null);
   const [calcStep, setCalcStep] = useState("idle");
 
   const isProcessing = [
@@ -58,22 +65,7 @@ export default function DetailMenu() {
           ? "100%"
           : "0%";
 
-  // Haversine Formula - Hitung jarak antara 2 koordinat (dalam KM)
-  const calculateHaversineDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Radius bumi dalam KM
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c; // Jarak dalam KM
-  };
-
-  // Fungsi untuk Calculate Shipping Fee
+  // Fungsi untuk Calculate Shipping Fee (Gunakan Google Maps untuk akurasi)
   const handleCalculateShipping = async () => {
     if (!produk) return;
 
@@ -91,39 +83,93 @@ export default function DetailMenu() {
       const baseLocationData = await getBaseLocationOpen();
       const adminCoords = baseLocationData.data;
 
-      // Step 3: Calculate pickup distance (admin -> store)
-      setCalcStep("calc_pickup");
-      const pickupDistance = calculateHaversineDistance(
-        adminCoords.latitude,
-        adminCoords.longitude,
-        produk.latitude,
-        produk.longitude,
-      );
+      // Konversi koordinat ke number jika string, handle comma decimal separator
+      const parseCoord = (val) => {
+        if (typeof val === "string") {
+          return Number(val.replace(",", "."));
+        }
+        return Number(val);
+      };
 
-      // Step 4: Calculate delivery distance (store -> customer)
+      const adminLat = parseCoord(adminCoords.latitude);
+      const adminLng = parseCoord(adminCoords.longitude);
+      const storeLat = parseCoord(produk.latitude);
+      const storeLng = parseCoord(produk.longitude);
+      const customerLat = customerCoords.latitude;
+      const customerLng = customerCoords.longitude;
+
+      // Validasi koordinat
+      if (
+        isNaN(adminLat) ||
+        isNaN(adminLng) ||
+        isNaN(storeLat) ||
+        isNaN(storeLng) ||
+        isNaN(customerLat) ||
+        isNaN(customerLng)
+      ) {
+        throw new Error("Koordinat tidak valid");
+      }
+
+      // Step 3: Hitung jarak menggunakan Google Maps Distance Matrix API (SAMA SEPERTI HOME.JSX)
+      // eslint-disable-next-line no-undef
+      const distanceService = new google.maps.DistanceMatrixService();
+
+      // Calculate pickup distance (admin -> store)
+      setCalcStep("calc_pickup");
+      const pickupResponse = await distanceService.getDistanceMatrix({
+        origins: [{ lat: adminLat, lng: adminLng }],
+        destinations: [{ lat: storeLat, lng: storeLng }],
+        travelMode: google.maps.TravelMode.DRIVING,
+        avoidTolls: true,
+      });
+
+      if (pickupResponse.rows[0].elements[0].status !== "OK") {
+        throw new Error("Gagal hitung jarak jemput");
+      }
+
+      const pickupDistance =
+        pickupResponse.rows[0].elements[0].distance.value / 1000; // Convert meter to KM
+
+      // Calculate delivery distance (store -> customer)
       setCalcStep("calc_delivery");
-      const deliveryDistance = calculateHaversineDistance(
-        produk.latitude,
-        produk.longitude,
-        customerCoords.latitude,
-        customerCoords.longitude,
-      );
+      const deliveryResponse = await distanceService.getDistanceMatrix({
+        origins: [{ lat: storeLat, lng: storeLng }],
+        destinations: [{ lat: customerLat, lng: customerLng }],
+        travelMode: google.maps.TravelMode.DRIVING,
+        avoidTolls: true,
+      });
+
+      if (deliveryResponse.rows[0].elements[0].status !== "OK") {
+        throw new Error("Gagal hitung jarak antar");
+      }
+
+      const deliveryDistance =
+        deliveryResponse.rows[0].elements[0].distance.value / 1000; // Convert meter to KM
+
+      // Validasi jarak (jarak tidak boleh lebih dari 100 km)
+      if (pickupDistance > 100 || deliveryDistance > 100) {
+        console.warn("Jarak terlalu jauh:", {
+          pickupDistance,
+          deliveryDistance,
+        });
+        alert("Lokasi terlalu jauh dari basecamp. Mohon cek kembali.");
+        setCalcStep("idle");
+        return;
+      }
 
       // Step 5: Fetch pricing config
       const pricingData = await getPricingConfig();
       const config = pricingData.data;
+      setPricingConfig(config);
 
       // Step 6: Calculate total shipping fee
-      const totalShipping =
-        pickupDistance * config.pickup_fee_per_km +
-        deliveryDistance * config.delivery_fee_per_km +
-        config.fixed_jastip_fee;
+      const pickupFee = pickupDistance * config.pickup_fee_per_km;
+      const deliveryFee = deliveryDistance * config.delivery_fee_per_km;
+      const totalShipping = pickupFee + deliveryFee + config.fixed_jastip_fee;
 
       // Step 7: Set location name and save shipping fee
       setCalcStep("done");
-      setUserLocation(
-        `${customerCoords.latitude.toFixed(4)}, ${customerCoords.longitude.toFixed(4)}`,
-      );
+      setUserLocation(`${customerLat.toFixed(4)}, ${customerLng.toFixed(4)}`);
       setDistanceInfo({
         pickup: pickupDistance,
         delivery: deliveryDistance,
@@ -132,9 +178,20 @@ export default function DetailMenu() {
         fixedFee: config.fixed_jastip_fee,
       });
       setShippingFee(Math.round(totalShipping));
+
+      // Debug log
+      console.log("✓ Shipping calculated (Google Maps):", {
+        pickupDistance: pickupDistance.toFixed(2),
+        deliveryDistance: deliveryDistance.toFixed(2),
+        pickupFee: Math.round(pickupFee),
+        deliveryFee: Math.round(deliveryFee),
+        totalShipping: Math.round(totalShipping),
+      });
     } catch (error) {
       console.error("Error calculating shipping:", error);
-      alert("Gagal hitung ongkir, pastikan GPS aktif!");
+      alert(
+        "Gagal hitung ongkir. Pastikan GPS aktif dan Google Maps API aktif!",
+      );
       setCalcStep("idle");
     }
   };
@@ -490,78 +547,39 @@ export default function DetailMenu() {
                 </label>
                 <button
                   onClick={handleCalculateShipping}
-                  disabled={isProcessing}
+                  disabled={isProcessing || !mapsLoaded}
                   className={`w-full rounded-2xl px-5 py-4 text-sm font-black uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all duration-200 ${
-                    isProcessing
+                    isProcessing || !mapsLoaded
                       ? "bg-gray-600 text-white cursor-not-allowed"
                       : "bg-amber-700 text-white shadow-lg hover:bg-amber-700 "
                   }`}
+                  title={!mapsLoaded ? "Google Maps sedang dimuat..." : ""}
                 >
                   <span className="text-lg">📍</span>
-                  <span>Cek Ongkir</span>
+                  <span>{!mapsLoaded ? "Memuat..." : "Cek Ongkir"}</span>
                 </button>
               </div>
 
-              {calcStep === "done" && distanceInfo && (
-                <div className="mb-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500 font-black mb-2">
-                        Jarak Jemput
-                      </p>
-                      <p className="text-base font-black text-slate-900">
-                        {distanceInfo.pickup.toFixed(2)} KM
-                      </p>
-                    </div>
-                    <div className="rounded-2xl bg-slate-50 p-4">
-                      <p className="text-[11px] uppercase tracking-[0.25em] text-slate-500 font-black mb-2">
-                        Jarak Antar
-                      </p>
-                      <p className="text-base font-black text-slate-900">
-                        {distanceInfo.delivery.toFixed(2)} KM
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid gap-3 bg-slate-50 rounded-3xl p-4">
-                    <div className="flex justify-between items-center text-sm text-slate-700">
-                      <span>Ongkir Jemput</span>
-                      <span>
-                        Rp{" "}
-                        {Math.round(
-                          distanceInfo.pickup * distanceInfo.pickupFeePerKm,
-                        ).toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-slate-700">
-                      <span>Ongkir Antar</span>
-                      <span>
-                        Rp{" "}
-                        {Math.round(
-                          distanceInfo.delivery * distanceInfo.deliveryFeePerKm,
-                        ).toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-slate-700">
-                      <span>Fee Jastip</span>
-                      <span>
-                        Rp {distanceInfo.fixedFee.toLocaleString("id-ID")}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-                    <span className="text-sm font-black text-slate-900 uppercase tracking-[0.2em]">
-                      TOTAL ONGKIR
-                    </span>
-                    <span className="text-3xl font-black text-slate-900">
-                      Rp {shippingFee.toLocaleString("id-ID")}
-                    </span>
-                  </div>
+              {calcStep === "done" && distanceInfo && pricingConfig && (
+                <div className="mb-8">
+                  <PriceCalculator
+                    ref={priceCalcRef}
+                    distances={{
+                      direct: distanceInfo.delivery,
+                      pickup: distanceInfo.pickup,
+                      delivery: distanceInfo.delivery,
+                      isOpposite: true,
+                      hasStore: true,
+                    }}
+                    durations={{ pickup: 0, delivery: 0 }}
+                    pricingConfig={{
+                      pickup_fee_per_km: distanceInfo.pickupFeePerKm,
+                      delivery_fee_per_km: distanceInfo.deliveryFeePerKm,
+                      fixed_jastip_fee: distanceInfo.fixedFee,
+                    }}
+                  />
                 </div>
               )}
-
-              {/* 3. INPUT CATATAN */}
 
               {/* 3. INPUT CATATAN */}
               <div className="mb-8">
@@ -577,7 +595,6 @@ export default function DetailMenu() {
                 />
               </div>
 
-              {/* // Di dalam return modal, pada bagian tombol KIRIM PESANAN */}
               <button
                 onClick={handleOrderWA}
                 disabled={!extraMenu.trim() || calcStep !== "done"}
@@ -591,7 +608,7 @@ export default function DetailMenu() {
                 <ShoppingCart size={20} />
                 {!extraMenu.trim() || calcStep !== "done"
                   ? "LENGKAPI DATA & CEK ONGKIR"
-                  : "🛒 KIRIM PESANAN"}
+                  : "🛒 KIRIM PESANAN VIA WHATSAPP"}
               </button>
 
               {shippingFee > 0 && (
