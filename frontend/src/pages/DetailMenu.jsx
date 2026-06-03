@@ -110,8 +110,7 @@ export default function DetailMenu() {
         throw new Error("Koordinat tidak valid");
       }
 
-      // Step 3: Hitung jarak menggunakan Google Maps Distance Matrix API (SAMA SEPERTI HOME.JSX)
-      // eslint-disable-next-line no-undef
+      // Step 3: Hitung jarak menggunakan Google Maps Distance Matrix API (SAMA SEPERTI HOME.JSX
       const distanceService = new google.maps.DistanceMatrixService();
 
       // Calculate pickup distance (admin -> store)
@@ -178,15 +177,6 @@ export default function DetailMenu() {
         fixedFee: config.fixed_jastip_fee,
       });
       setShippingFee(Math.round(totalShipping));
-
-      // Debug log
-      console.log("✓ Shipping calculated (Google Maps):", {
-        pickupDistance: pickupDistance.toFixed(2),
-        deliveryDistance: deliveryDistance.toFixed(2),
-        pickupFee: Math.round(pickupFee),
-        deliveryFee: Math.round(deliveryFee),
-        totalShipping: Math.round(totalShipping),
-      });
     } catch (error) {
       console.error("Error calculating shipping:", error);
       alert(
@@ -204,7 +194,7 @@ export default function DetailMenu() {
         setProduk(result.data); // Simpan data dari backend
       } catch (err) {
         console.error(err);
-        alert("Gagal ambil data toko, ndes!");
+        alert("Gagal ambil data toko!");
       } finally {
         setLoading(false);
       }
@@ -214,9 +204,7 @@ export default function DetailMenu() {
 
   const handleOrderWA = () => {
     if (!extraMenu.trim()) {
-      alert(
-        "Waduh ndes, isi dulu menu yang mau dipesan dari daftar menu toko!",
-      );
+      alert("Waduh, isi dulu menu yang mau dipesan dari daftar menu toko!");
       return; // Berhenti di sini, gak bakal buka WA
     }
 
@@ -228,6 +216,22 @@ export default function DetailMenu() {
     }
 
     const phoneNumber = "62895379007437"; // No WA Truken
+
+    const normalizeCoord = (coord) => String(coord).replace(/,/g, ".").trim();
+
+    const buildGoogleMapsLink = (lat, lng) => {
+      const normalizedLat = normalizeCoord(lat);
+      const normalizedLng = normalizeCoord(lng);
+      const encodedQuery = encodeURIComponent(
+        `${normalizedLat},${normalizedLng}`,
+      );
+      return `https://www.google.com/maps/search/${encodedQuery}`;
+    };
+
+    const shopMapUrl = buildGoogleMapsLink(produk.latitude, produk.longitude);
+    const userMapUrl = buildGoogleMapsLink(
+      ...userLocation.split(",").map((value) => value.trim()),
+    );
 
     // Rincian ongkir jika sudah dihitung
     let shippingDetails = "";
@@ -241,7 +245,7 @@ export default function DetailMenu() {
       shippingDetails = `%0A%0A*RINCIAN ONGKIR:*%0A📍 Jarak Jemput: ${distanceInfo.pickup.toFixed(2)} KM%0A📍 Jarak Antar: ${distanceInfo.delivery.toFixed(2)} KM%0A%0A💰 Biaya Jemput: Rp ${pickupCost.toLocaleString("id-ID")}%0A💰 Biaya Antar: Rp ${deliveryCost.toLocaleString("id-ID")}%0A💰 Fee Jastip Tetap: Rp ${distanceInfo.fixedFee.toLocaleString("id-ID")}%0A%0A🔴 *TOTAL ONGKIR: Rp ${shippingFee.toLocaleString("id-ID")}*`;
     }
 
-    const message = `Halo Truken! %0A%0ASaya mau pesan Jastip *${produk.store_name}* %0A%0A*Dengan Menu:*%0A${extraMenu || "-"}%0A%0A*Catatan Khusus:*%0A${note || "-"}%0A%0A*Lokasi Warung:* ${produk.address}%0A---------------------------%0A%0A*Lokasi Pengiriman:*%0A${userLocation || "Belum diisi"}${shippingDetails}%0A%0A---------------------------%0A*Mohon segera diproses yaaa*`;
+    const message = `Halo Truken! %0A%0ASaya mau pesan Jastip *${produk.store_name}* %0A%0A*Dengan Menu:*%0A${extraMenu || "-"}%0A%0A*Catatan Khusus:*%0A${note || "-"}%0A%0A*Lokasi Warung:* ${produk.address}%0A${shopMapUrl}%0A---------------------------%0A%0A*Lokasi Pengiriman:*%0A${userLocation || "Belum diisi"}%0A${userMapUrl}${shippingDetails}%0A%0A---------------------------%0A*Mohon segera diproses yaaa*`;
 
     window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
   };
@@ -550,13 +554,13 @@ export default function DetailMenu() {
                   disabled={isProcessing || !mapsLoaded}
                   className={`w-full rounded-2xl px-5 py-4 text-sm font-black uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all duration-200 ${
                     isProcessing || !mapsLoaded
-                      ? "bg-gray-600 text-white cursor-not-allowed"
+                      ? "bg-gray-600 text-white cursor-not-allowed animate-pulse"
                       : "bg-amber-700 text-white shadow-lg hover:bg-amber-700 "
                   }`}
                   title={!mapsLoaded ? "Google Maps sedang dimuat..." : ""}
                 >
                   <span className="text-lg">📍</span>
-                  <span>{!mapsLoaded ? "Memuat..." : "Cek Ongkir"}</span>
+                  <span>{isProcessing ? "Menghitung..." : "Cek Ongkir"}</span>
                 </button>
               </div>
 
