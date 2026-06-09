@@ -23,8 +23,8 @@ export default function App() {
       <TikTokBarrier />
 
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/menu" element={<Menu />} />
+        <Route path="/cek-ongkir" element={<Home />} />
+        <Route path="/" element={<Menu />} />
         <Route path="/menu/:id" element={<DetailMenu />} />
         <Route path="/login" element={<Login />} />
 

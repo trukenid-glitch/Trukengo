@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Search, Utensils } from "lucide-react";
+import { ArrowLeft, MapPin, Search, Utensils, Navigation } from "lucide-react";
 import { getAllStores } from "../api/customerService";
 import { getImageUrl } from "../helper/wselver";
 
@@ -29,36 +29,34 @@ export default function Menu() {
   return (
     <div className="min-h-screen bg-slate-200">
       <div className="min-h-screen bg-gray-50 max-w-md mx-auto shadow-2xl relative pb-20">
-        {/* HEADER PREMIUM */}
-        <div className="sticky top-0 z-[60] px-4 py-3">
+       {/* HEADER PREMIUM */}
+        <div className="sticky top-0 z-[60] pl-4 py-3">
           {/* Glassmorphism Background */}
           <div className="absolute inset-0 bg-white/80 backdrop-blur-md border-b border-white/20 shadow-sm"></div>
 
-          <div className="relative flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {/* Tombol Back dengan Lingkaran Soft */}
-              <button
-                onClick={() => navigate("/")}
-                className="group p-2 bg-slate-900 -mt-6 text-white rounded-2xl hover:bg-blue-600 transition-all duration-300 shadow-lg shadow-slate-900/20 active:scale-90"
-              >
-                <ArrowLeft
-                  size={20}
-                  strokeWidth={3}
-                  className="group-hover:-translate-x-1 transition-transform"
-                />
-              </button>
-
-              {/* Teks Judul dengan Aksen */}
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1">
-                  <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none">
-                    KATALOG <span className="text-amber-900">MENU</span>
-                  </h1>
-                </div>
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-1">
+          <div className="relative flex items-center">
+            {/* SISI KIRI: TEKS JUDUL */}
+            <div className="flex flex-col w-full">
+              <div className="flex items-center gap-1">
+                <h1 className="text-lg font-black text-slate-900 tracking-tight leading-none">
+                  KATALOG <span className="text-amber-800">MENU</span>
+                </h1>
+              </div>
+              <div className="flex justify-between w-full pr-5 pl-3">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-1 mt-1">
                   <span className="w-4 h-[1px] bg-slate-300"></span>
-                  TUKENGO
+                  TRUKENGO
                 </p>
+                <button
+                  onClick={() => {
+                    // Trigger untuk membuka modal order atau modal khusus cek ongkir
+                    navigate('/cek-ongkir')
+                  }}
+                  className="flex items-center justify-between  bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-xl font-black text-[10px] uppercase tracking-wider shadow-md shadow-amber-800/20 active:scale-95 transition-all duration-300"
+                >
+                  <Navigation size={12} className="animate-pulse " />
+                  Cek Ongkir
+                </button>
               </div>
             </div>
           </div>
