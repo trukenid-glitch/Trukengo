@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Search, Utensils, Navigation } from "lucide-react";
+import { ArrowLeft, MapPin, Search, Utensils, Navigation, MessageSquareDot } from "lucide-react";
 import { getAllStores } from "../api/customerService";
 import { getImageUrl } from "../helper/wselver";
 
@@ -11,20 +11,65 @@ export default function Menu() {
 
   const [stores, setStores] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [fetchingMore, setFetchingMore] = useState(false);
 
+  // 1. Fetch data pertama kali masuk halaman
   useEffect(() => {
-    const fetchStores = async () => {
+    const fetchInitialStores = async () => {
       try {
-        const result = await getAllStores();
+        setLoading(true);
+        const result = await getAllStores(1, 5); // Ambil halaman 1, limit 5
         setStores(result.data);
+        setHasMore(result.hasMore);
       } catch (err) {
         console.error(err);
       } finally {
         setLoading(false);
       }
     };
-    fetchStores();
+    fetchInitialStores();
   }, []);
+
+  // 2. Fungsi untuk mengambil data halaman berikutnya saat di-scroll
+  const loadMoreStores = async () => {
+    if (fetchingMore || !hasMore) return; // Mencegah double fetch
+
+    try {
+      setFetchingMore(true);
+      const nextPage = page + 1;
+      const result = await getAllStores(nextPage, 5);
+      
+      // Gabungkan data lama dengan data baru yang baru di-fetch
+      setStores((prevStores) => [...prevStores, ...result.data]);
+      setPage(nextPage);
+      setHasMore(result.hasMore);
+    } catch (err) {
+      console.error("Gagal load data berikutnya:", err);
+    } finally {
+      setFetchingMore(false);
+    }
+  };
+
+  // 3. Efek Listener mendeteksi scroll mentok bawah layar
+  useEffect(() => {
+    const handleScroll = () => {
+      // Jarak scroll dari atas + tinggi layar browser fisik
+      const scrollTop = window.scrollY || document.documentElement.scrollTop;
+      const windowHeight = window.innerHeight;
+      // Tinggi total seluruh halaman web
+      const docHeight = document.documentElement.scrollHeight;
+
+      // Jika sisa scroll tinggal 100px sebelum mentok bawah, panggil loadMoreStores
+      if (docHeight - (scrollTop + windowHeight) < 100) {
+        loadMoreStores();
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll); // Cleanup event
+  }, [page, hasMore, fetchingMore]); // Dependensi krusial biar state-nya sinkron
 
   return (
     <div className="min-h-screen bg-slate-200">
@@ -75,6 +120,48 @@ export default function Menu() {
             />
           </div>
         </div>
+
+        {/* ==================== BANNER JASTIP MANUAL PREMIUM (BARU) ==================== */}
+       {/* ==================== BANNER JASTIP MANUAL PREMIUM (WA LOGO VERSION) ==================== */}
+        <div className="px-4 pb-2 max-w-md mx-auto">
+          <div
+            onClick={() => {
+              const phoneNumber = "6283838072848";
+              const message = encodeURIComponent("Halo Trukengo! Saya mau jastip dong, makanan yang saya cari belum ada di aplikasi.");
+              window.open(`https://wa.me/${phoneNumber}?text=${message}`, "_blank");
+            }}
+            className="flex items-center justify-between p-4 bg-amber-50 hover:bg-amber-100/70 border border-amber-200/60 rounded-[24px] shadow-sm cursor-pointer active:scale-[0.98] transition-all duration-300"
+          >
+            {/* Kiri: Ikon & Teks */}
+            <div className="flex items-center gap-3 pr-2">
+              <div className="bg-amber-800 text-white p-2.5 rounded-2xl shadow-sm flex-shrink-0 animate-pulse">
+                <MessageSquareDot size={18} strokeWidth={2.5} />
+              </div>
+              <div className="flex flex-col">
+                <h4 className="text-xs font-black text-slate-800 tracking-tight leading-none mb-1">
+                  Gak nemu yang dicari?
+                </h4>
+                <p className="text-[10px] font-bold text-amber-900/70 leading-tight">
+                  Chat WhatsApp aja!
+                </p>
+              </div>
+            </div>
+
+            {/* Kanan: LOGO WHATSAPP (Ganti Tulisan Chat Admin) */}
+            <div className="bg-[#25D366] p-2.5 rounded-2xl shadow-lg shadow-green-200 flex-shrink-0 active:scale-90 transition-transform">
+              <svg 
+                viewBox="0 0 24 24" 
+                fill="white" 
+                className="w-5 h-5"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.72.94 3.659 1.437 5.634 1.437h.005c6.558 0 11.895-5.338 11.898-11.896a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+        {/* ============================================================================= */}
+        {/* ============================================================================= */}
 
         {/* KONTEN MENU */}
         {loading ? (
@@ -181,12 +268,21 @@ export default function Menu() {
           </div>
         )}
 
-        {/* FOOTER NOTE */}
-        <div className="mt-8 text-center px-8 pb-10">
-          <p className="text-xs text-gray-400 font-medium">
-            Gak nemu yang dicari? Langsung chat ajah
-          </p>
-        </div>
+        {fetchingMore && (
+            <div className="py-4 flex justify-center items-center gap-2">
+              <div className="w-5 h-5 border-2 border-amber-800 border-t-transparent rounded-full animate-spin"></div>
+              <p className="text-[10px] font-black text-amber-950 uppercase tracking-widest animate-pulse">
+                Loading
+              </p>
+            </div>
+          )}
+
+          {/* NOTIFIKASI JIKA DATA SUDAH HABIS */}
+          {!hasMore && stores.length > 0 && (
+            <p className="text-center text-[9px] font-black text-gray-400 uppercase tracking-widest py-6">
+              Tidak ada data makanan lain
+            </p>
+          )}
       </div>
     </div>
   );

@@ -215,7 +215,7 @@ export default function DetailMenu() {
       return; // Berhenti di sini juga
     }
 
-    const phoneNumber = "62895379007437"; // No WA Truken
+    const phoneNumber = "6283838072848"; // No WA Truken
 
     const normalizeCoord = (coord) => String(coord).replace(/,/g, ".").trim();
 

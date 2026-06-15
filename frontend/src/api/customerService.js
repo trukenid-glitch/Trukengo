@@ -1,12 +1,13 @@
 import api from './config';
 
 // Ambil semua daftar toko untuk katalog
-export const getAllStores = async () => {
+export const getAllStores = async (page = 1, limit = 5) => {
   try {
-    const response = await api.get('/customer/stores');
-    return response.data;
+    // Tembak API dengan query string ?page=X&limit=Y
+    const response = await api.get(`/customer/stores?page=${page}&limit=${limit}`);
+    return response.data; // Mengembalikan { status, data, hasMore }
   } catch (error) {
-    throw error.response?.data?.message || "Gagal memuat menu, ndes!";
+    throw error.response?.data?.message || "Gagal memuat menu!";
   }
 };
 
