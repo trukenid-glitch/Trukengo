@@ -299,7 +299,7 @@ export default function DetailMenu() {
       <div className="min-h-screen bg-white max-w-md mx-auto shadow-2xl relative pb-32 overflow-x-hidden">
         {/* Tombol Back Melayang */}
         <button
-          onClick={() => navigate("/menu")}
+          onClick={() => navigate("/")}
           className="fixed top-4 left-4 z-20 bg-white/80 backdrop-blur p-2 rounded-full shadow-md"
         >
           <ArrowLeft size={24} />
