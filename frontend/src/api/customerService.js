@@ -10,6 +10,8 @@ export const getAllStores = async (page = 1, limit = 5, search = "") => {
   }
 };
 
+
+
 // Ambil detail toko tertentu
 export const getStoreDetail = async (id) => {
   try {

@@ -21,7 +21,7 @@ exports.getStores = async (req, res) => {
             SELECT id, product_photos, store_name, category, price, address 
             FROM stores 
             ${queryCondition}
-            ORDER BY created_at DESC
+            ORDER BY EXTRACT(DAY FROM created_at) + id % 3 DESC
             LIMIT $1 OFFSET $2
         `;
         const result = await pool.query(query, queryParams);
