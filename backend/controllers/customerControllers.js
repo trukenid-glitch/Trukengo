@@ -1,32 +1,48 @@
 const pool = require('../db');
 
-// Ambil semua toko untuk katalog menu
 exports.getStores = async (req, res) => {
     try {
-        // Ambil page dan limit dari query string, kasih default kalau kosong
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 5;
         const offset = (page - 1) * limit;
+        const search = req.query.search || ""; // Ambil keyword search dari frontend
 
-        // Query dengan LIMIT dan OFFSET
+        // Tambahkan klausa WHERE jika ada keyword search
+        let queryCondition = "WHERE is_open = true";
+        let queryParams = [limit, offset];
+
+        if (search.trim() !== "") {
+            queryCondition += " AND store_name ILIKE $3";
+            queryParams.push(`%${search}%`); // Mencari nama toko yang mengandung kata tersebut
+        }
+
+        // Query utama dengan LIMIT, OFFSET, dan SEARCH
         const query = `
             SELECT id, product_photos, store_name, category, price, address 
             FROM stores 
-            WHERE is_open = true 
+            ${queryCondition}
             ORDER BY created_at DESC
             LIMIT $1 OFFSET $2
         `;
-        const result = await pool.query(query, [limit, offset]);
+        const result = await pool.query(query, queryParams);
 
-        // Hitung total semua toko yang buka untuk info hasMore di frontend
-        const totalQuery = await pool.query("SELECT COUNT(*) FROM stores WHERE is_open = true");
+        // Hitung total stores berdasarkan kondisi search juga
+        let totalQueryStr = "SELECT COUNT(*) FROM stores WHERE is_open = true";
+        if (search.trim() !== "") {
+            totalQueryStr += " AND store_name ILIKE $1";
+        }
+        const totalQuery = await pool.query(
+            totalQueryStr, 
+            search.trim() !== "" ? [`%${search}%`] : []
+        );
+        
         const totalStores = parseInt(totalQuery.rows[0].count);
         const hasMore = offset + result.rows.length < totalStores;
 
         res.json({ 
             status: "success", 
             data: result.rows,
-            hasMore: hasMore // Kasih tau frontend apakah masih ada data selanjutnya
+            hasMore: hasMore 
         });
     } catch (err) {
         res.status(500).json({ message: err.message });

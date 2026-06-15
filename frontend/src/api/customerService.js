@@ -1,11 +1,10 @@
 import api from './config';
 
-// Ambil semua daftar toko untuk katalog
-export const getAllStores = async (page = 1, limit = 5) => {
+export const getAllStores = async (page = 1, limit = 5, search = "") => {
   try {
-    // Tembak API dengan query string ?page=X&limit=Y
-    const response = await api.get(`/customer/stores?page=${page}&limit=${limit}`);
-    return response.data; // Mengembalikan { status, data, hasMore }
+    // Masukkan variable search ke dalam query URL
+    const response = await api.get(`/customer/stores?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`);
+    return response.data;
   } catch (error) {
     throw error.response?.data?.message || "Gagal memuat menu!";
   }

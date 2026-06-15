@@ -14,34 +14,51 @@ export default function Menu() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [fetchingMore, setFetchingMore] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
-  // 1. Fetch data pertama kali masuk halaman
+  const [searchTerm, setSearchTerm] = useState(""); // Input teks real-time
+  const [debouncedSearch, setDebouncedSearch] = useState(""); // Hasil text setelah didiamkan
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+    }, 400); // Jeda waktu pencarian jalan otomatis
+
+    return () => clearTimeout(delayDebounceFn); // Hapus timeout lama kalau user ngetik lagi sebelum 400ms
+  }, [searchTerm]);
+
+  // 1. Fetch data UTAMA (Dipicu saat pertama kali buka atau saat keyword debouncedSearch berubah)
   useEffect(() => {
     const fetchInitialStores = async () => {
       try {
-        setLoading(true);
-        const result = await getAllStores(1, 5); // Ambil halaman 1, limit 5
+        if (isInitialLoad) {
+          setLoading(true);
+        }
+        // Reset page ke 1 setiap kali ada pencarian baru
+        const result = await getAllStores(1, 5, debouncedSearch); 
         setStores(result.data);
+        setPage(1); // Kembalikan ke halaman awal
         setHasMore(result.hasMore);
       } catch (err) {
         console.error(err);
       } finally {
-        setLoading(false);
+        setLoading(false);      // Matikan loading utama
+        setIsInitialLoad(false);
       }
     };
+    
     fetchInitialStores();
-  }, []);
+  }, [debouncedSearch]); // Re-run effect jika kata kunci hasil debounce berubah
 
-  // 2. Fungsi untuk mengambil data halaman berikutnya saat di-scroll
+  // 2. Fungsi Load More saat di-scroll (Pastikan membawa parameter debouncedSearch)
   const loadMoreStores = async () => {
-    if (fetchingMore || !hasMore) return; // Mencegah double fetch
+    if (fetchingMore || !hasMore) return;
 
     try {
       setFetchingMore(true);
       const nextPage = page + 1;
-      const result = await getAllStores(nextPage, 5);
+      const result = await getAllStores(nextPage, 5, debouncedSearch); // Bawa kata kunci pencarian
       
-      // Gabungkan data lama dengan data baru yang baru di-fetch
       setStores((prevStores) => [...prevStores, ...result.data]);
       setPage(nextPage);
       setHasMore(result.hasMore);
@@ -52,24 +69,21 @@ export default function Menu() {
     }
   };
 
-  // 3. Efek Listener mendeteksi scroll mentok bawah layar
+  // 3. Listener Scroll Tetap Sama
   useEffect(() => {
     const handleScroll = () => {
-      // Jarak scroll dari atas + tinggi layar browser fisik
       const scrollTop = window.scrollY || document.documentElement.scrollTop;
       const windowHeight = window.innerHeight;
-      // Tinggi total seluruh halaman web
       const docHeight = document.documentElement.scrollHeight;
 
-      // Jika sisa scroll tinggal 100px sebelum mentok bawah, panggil loadMoreStores
       if (docHeight - (scrollTop + windowHeight) < 100) {
         loadMoreStores();
       }
     };
 
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll); // Cleanup event
-  }, [page, hasMore, fetchingMore]); // Dependensi krusial biar state-nya sinkron
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [page, hasMore, fetchingMore, debouncedSearch]); // Tambah debouncedSearch di dependensi
 
   return (
     <div className="min-h-screen bg-slate-200">
@@ -115,6 +129,8 @@ export default function Menu() {
             />
             <input
               type="text"
+              value={searchTerm} // Ikat nilai input ke state searchTerm
+              onChange={(e) => setSearchTerm(e.target.value)} // Update state tiap kali ngetik
               placeholder="Mau titip makanan apa hari ini?"
               className="w-full pl-10 pr-4 py-3 bg-white rounded-2xl border-none shadow-sm focus:ring-2 focus:ring-blue-500 outline-none text-sm"
             />
@@ -203,7 +219,7 @@ export default function Menu() {
         </div>
       </div>
         ) : (
-          <div className="px-4 max-w-md mx-auto space-y-4 mt-4">
+          <div className={`px-4 max-w-md mx-auto space-y-4 mt-4 transition-opacity duration-200 ${searchTerm !== debouncedSearch ? 'opacity-50' : 'opacity-100'}`}>
             {stores.length > 0 ? (
               stores.map((item) => (
                 <div
@@ -261,8 +277,9 @@ export default function Menu() {
                 </div>
               ))
             ) : (
-              <div className="text-center py-20 text-gray-400">
-                Belum ada toko yang buka nih.
+              <div className="text-center py-20 text-gray-400 font-bold text-sm">
+                "{debouncedSearch}" tidak ada. <br/>
+                coba cari makanan lain
               </div>
             )}
           </div>
