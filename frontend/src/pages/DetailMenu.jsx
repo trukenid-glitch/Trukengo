@@ -180,7 +180,7 @@ export default function DetailMenu() {
     } catch (error) {
       console.error("Error calculating shipping:", error);
       alert(
-        "Gagal hitung ongkir. Pastikan GPS aktif dan Google Maps API aktif!",
+        "Gagal hitung ongkir. Pastikan GPS aktif!",
       );
       setCalcStep("idle");
     }
@@ -482,8 +482,6 @@ export default function DetailMenu() {
                 </div>
               )}
             </div>
-
-            {/* Indikator Halaman (Cuma muncul kalau fotonya banyak) */}
             {/* Indikator Halaman & Petunjuk Geser */}
             {Array.isArray(selectedImg) && selectedImg.length > 1 && (
               <div className="absolute bottom-10 flex flex-col items-center gap-4">
@@ -554,12 +552,40 @@ export default function DetailMenu() {
                   disabled={isProcessing || !mapsLoaded}
                   className={`w-full rounded-2xl px-5 py-4 text-sm font-black uppercase tracking-[0.15em] flex items-center justify-center gap-3 transition-all duration-200 ${
                     isProcessing || !mapsLoaded
-                      ? "bg-gray-600 text-white cursor-not-allowed animate-pulse"
-                      : "bg-amber-700 text-white shadow-lg hover:bg-amber-700 "
+                      ? "bg-gray-600 text-white cursor-not-allowed"
+                      : "bg-amber-700 text-white shadow-lg hover:bg-amber-800"
                   }`}
                   title={!mapsLoaded ? "Google Maps sedang dimuat..." : ""}
                 >
-                  <span className="text-lg">📍</span>
+                  {isProcessing ? (
+                    // 1. Animasi Loading Spinner SVG yang berputar (animate-spin)
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        box-shadow="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                  ) : (
+                    // 2. Ikon Pin Lokasi bawaan jika sedang tidak loading
+                    <span className="text-lg">📍</span>
+                  )}
+
+                  {/* 3. Teks dinamis sesuai status proses */}
                   <span>{isProcessing ? "Menghitung..." : "Cek Ongkir"}</span>
                 </button>
               </div>
