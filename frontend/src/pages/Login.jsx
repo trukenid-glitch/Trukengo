@@ -19,11 +19,10 @@ export default function Login() {
       const result = await loginUser(formData.username, formData.password);
       
       if (result.status === "success") {
-        // Simpan data login ke localStorage (agar tidak hilang pas refresh)
-        localStorage.setItem('token', result.token); // Nanti kalo udah pake JWT
+        // Cukup simpan data profil user biasa ke localStorage (untuk kebutuhan UI)
         const userData = {
           username: result.data.username,
-          role: result.data.role // Pastikan isinya 'admin'
+          role: result.data.role 
         };
         localStorage.setItem('user', JSON.stringify(userData));
 
@@ -37,11 +36,11 @@ export default function Login() {
         }
       }
     } catch (err) {
-      setError(err); // Nampilin pesan error: "Username atau Password salah"
+      setError(err); 
     } finally {
       setLoading(false);
     }
-  };
+};
 
   return (
     <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden font-sans">
