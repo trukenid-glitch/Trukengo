@@ -34,9 +34,9 @@ exports.userLogin = async (req, res) => {
         // 4. Taruh token di HttpOnly Cookie
         res.cookie("token", token, {
             httpOnly: true,                 // JavaScript frontend ga akan bisa baca token ini (Aman dari XSS)
-            secure: process.env.NODE_ENV === "production", // Wajib HTTPS kalau sudah production
-            sameSite: "lax",                // Melindungi dari CSRF
-            maxAge: 24 * 60 * 60 * 1000     // Expired cookie (1 hari dalam milidetik)
+            secure: true, // Wajib HTTPS kalau sudah production
+            sameSite: "none", 
+            maxAge: 24 * 60 * 60 * 1000    // Expired cookie (1 hari dalam milidetik)
         });
 
         // 5. Kirim data sukses ke frontend (TANPA mengirim token di body JSON)

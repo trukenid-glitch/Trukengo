@@ -18,7 +18,7 @@ const URL_BACKEND = "https://trukengo.onrender.com/api/ping";
 app.use(cors({
   origin: [
     'http://localhost:5173', // URL local frontend (Vite/React biasanya port ini)
-    'https://namadomain-frontendmu.vercel.app', 
+    'https://trukengo.online', 
     'http://10.184.255.12:5173', // Nanti ganti pakai URL Vercel produksimu ndes
   ], 
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
